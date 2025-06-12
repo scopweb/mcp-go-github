@@ -1,0 +1,71 @@
+package types
+
+import "github.com/google/go-github/v66/github"
+
+// MCPServer representa el servidor MCP principal
+type MCPServer struct {
+	GithubClient *github.Client
+	GitConfig    GitConfig
+}
+
+// GitConfig contiene la configuración del entorno Git local
+type GitConfig struct {
+	HasGit        bool   `json:"hasGit"`
+	RepoPath      string `json:"repoPath"`
+	RemoteURL     string `json:"remoteURL"`
+	CurrentBranch string `json:"currentBranch"`
+	IsGitRepo     bool   `json:"isGitRepo"`
+	WorkspacePath string `json:"workspacePath"` // Directorio de trabajo configurado manualmente
+}
+
+// Estructuras del protocolo JSON-RPC 2.0
+type JSONRPCRequest struct {
+	JSONRPC string                 `json:"jsonrpc"`
+	ID      interface{}            `json:"id,omitempty"`
+	Method  string                 `json:"method"`
+	Params  map[string]interface{} `json:"params,omitempty"`
+}
+
+type JSONRPCResponse struct {
+	JSONRPC string        `json:"jsonrpc"`
+	ID      interface{}   `json:"id,omitempty"`
+	Result  interface{}   `json:"result,omitempty"`
+	Error   *JSONRPCError `json:"error,omitempty"`
+}
+
+type JSONRPCError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+// Estructuras MCP para herramientas
+type Tool struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	InputSchema ToolInputSchema `json:"inputSchema"`
+}
+
+type ToolInputSchema struct {
+	Type       string              `json:"type"`
+	Properties map[string]Property `json:"properties"`
+	Required   []string            `json:"required,omitempty"`
+}
+
+type Property struct {
+	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+type ToolsListResult struct {
+	Tools []Tool `json:"tools"`
+}
+
+type ToolCallResult struct {
+	Content []Content `json:"content"`
+}
+
+type Content struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
