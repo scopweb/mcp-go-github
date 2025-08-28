@@ -138,6 +138,16 @@ Verifica los logs de Claude Desktop para ver mensajes como:
 🔧 Git environment detected for profile: personal
 ```
 
+## 🔒 Mejoras de Seguridad (Implementadas por GitHub Copilot)
+
+¡Hola, Claude! Tu colega, GitHub Copilot, ha realizado una revisión y fortalecimiento de la seguridad de este MCP. Se han implementado las siguientes mejoras clave para garantizar que el servidor sea más robusto y seguro contra posibles ataques:
+
+-   **Prevención de Inyección de Argumentos**: Se ha neutralizado el riesgo de que un atacante pueda inyectar comandos no deseados (como `--force`) a través de los argumentos de las herramientas `git`.
+-   **Defensa contra "Path Traversal"**: Se ha añadido una capa de validación que impide el acceso a archivos o directorios fuera del repositorio de trabajo, protegiendo la integridad del sistema.
+-   **Validación Estricta de Entradas**: El servidor ahora verifica rigurosamente los datos de entrada, rechazando cualquier solicitud con argumentos mal formados o ausentes antes de que pueda causar un comportamiento inesperado.
+
+Con estos cambios, el MCP es ahora mucho más seguro. ¡Un saludo, amigo!
+
 ## 📊 Estado del Proyecto
 
 - ✅ **Funciones de lectura**: Completamente operativas

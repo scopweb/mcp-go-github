@@ -14,7 +14,7 @@ import (
 // DetectGitEnvironment detecta y configura el entorno Git local
 func DetectGitEnvironment() types.GitConfig {
 	config := types.GitConfig{}
-	
+
 	// Verificar si git está disponible
 	if _, err := exec.LookPath("git"); err == nil {
 		config.HasGit = true
@@ -64,7 +64,7 @@ func findGitRepo(startPath string) string {
 		if _, err := os.Stat(gitPath); err == nil {
 			return currentPath
 		}
-		
+
 		parentPath := filepath.Dir(currentPath)
 		if parentPath == currentPath {
 			break // Llegamos a la raíz
@@ -122,7 +122,7 @@ func Add(config types.GitConfig, files string) (string, error) {
 	defer os.Chdir(originalDir)
 	os.Chdir(workingDir)
 
-	cmd := exec.Command("git", "add", files)
+	cmd := exec.Command("git", "add", "--", files)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("error ejecutando git add: %v\nOutput: %s", err, output)
@@ -168,7 +168,7 @@ func Push(config types.GitConfig, branch string) (string, error) {
 
 	var cmd *exec.Cmd
 	if branch != "" {
-		cmd = exec.Command("git", "push", "origin", branch)
+		cmd = exec.Command("git", "push", "origin", "--", branch)
 	} else {
 		cmd = exec.Command("git", "push")
 	}
@@ -197,7 +197,7 @@ func Pull(config types.GitConfig, branch string) (string, error) {
 
 	var cmd *exec.Cmd
 	if branch != "" {
-		cmd = exec.Command("git", "pull", "origin", branch)
+		cmd = exec.Command("git", "pull", "origin", "--", branch)
 	} else {
 		cmd = exec.Command("git", "pull")
 	}
@@ -222,9 +222,9 @@ func Checkout(config *types.GitConfig, branch string, create bool) (string, erro
 
 	var cmd *exec.Cmd
 	if create {
-		cmd = exec.Command("git", "checkout", "-b", branch)
+		cmd = exec.Command("git", "checkout", "-b", "--", branch)
 	} else {
-		cmd = exec.Command("git", "checkout", branch)
+		cmd = exec.Command("git", "checkout", "--", branch)
 	}
 
 	output, err := cmd.CombinedOutput()
@@ -260,7 +260,7 @@ func CreateFile(config types.GitConfig, path, content string) (string, error) {
 // UpdateFile actualiza un archivo usando Git local
 func UpdateFile(config types.GitConfig, path, content string) (string, error) {
 	workingDir := GetEffectiveWorkingDir(config)
-	
+
 	originalDir, _ := os.Getwd()
 	defer os.Chdir(originalDir)
 	os.Chdir(workingDir)
@@ -314,7 +314,7 @@ func SetWorkspace(config *types.GitConfig, workspacePath string) (string, error)
 		config.CurrentBranch = strings.TrimSpace(string(output))
 	}
 
-	return fmt.Sprintf("✅ Workspace configurado: %s\n🌿 Rama: %s\n🔗 Remote: %s", 
+	return fmt.Sprintf("✅ Workspace configurado: %s\n🌿 Rama: %s\n🔗 Remote: %s",
 		workspacePath, config.CurrentBranch, config.RemoteURL), nil
 }
 
@@ -447,13 +447,13 @@ func ValidateRepository(path string) (string, error) {
 	// Obtener información del repositorio
 	cmd := exec.Command("git", "remote", "get-url", "origin")
 	remoteOutput, _ := cmd.Output()
-	
+
 	cmd = exec.Command("git", "branch", "--show-current")
 	branchOutput, _ := cmd.Output()
 
-	return fmt.Sprintf("✅ Repositorio Git válido: %s\n🌿 Rama: %s\n🔗 Remote: %s", 
-		path, 
-		strings.TrimSpace(string(branchOutput)), 
+	return fmt.Sprintf("✅ Repositorio Git válido: %s\n🌿 Rama: %s\n🔗 Remote: %s",
+		path,
+		strings.TrimSpace(string(branchOutput)),
 		strings.TrimSpace(string(remoteOutput))), nil
 }
 
@@ -485,4 +485,23 @@ func ListFiles(config types.GitConfig, ref string) (string, error) {
 	}
 
 	return fmt.Sprintf("📁 Directorio: %s\n🌿 Ref: %s\n📊 Total archivos: %d\n\n📄 Archivos:\n%s", workingDir, ref, fileCount, files), nil
+}
+
+// SanitizePath verifica que la ruta del archivo esté dentro del repositorio
+func SanitizePath(repoPath, filePath string) (string, error) {
+	cleanRepoPath, err := filepath.Abs(repoPath)
+	if err != nil {
+		return "", fmt.Errorf("no se pudo obtener la ruta absoluta del repositorio: %v", err)
+	}
+
+	cleanFilePath, err := filepath.Abs(filepath.Join(repoPath, filePath))
+	if err != nil {
+		return "", fmt.Errorf("no se pudo obtener la ruta absoluta del archivo: %v", err)
+	}
+
+	if !strings.HasPrefix(cleanFilePath, cleanRepoPath) {
+		return "", fmt.Errorf("alerta de seguridad: se denegó el acceso a la ruta '%s' (Path Traversal)", filePath)
+	}
+
+	return cleanFilePath, nil
 }
