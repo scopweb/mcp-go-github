@@ -10,6 +10,13 @@
 # Output de go build
 /github-mcp
 /github-mcp.exe
+/github-mcp-test.exe
+/github-go-server-mcp.exe
+/github-mcp-modular.exe
+
+# Go specific
+vendor/
+*.sum.backup
 
 # Archivos de entorno
 .env
@@ -35,3 +42,8 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+
+# Development documentation
+CONVERSATION.md
+CLAUDE.md
+*.prompt.md

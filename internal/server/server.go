@@ -2,21 +2,28 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/git"
-	githubapi "github.com/jotajotape/github-go-server-mcp/internal/github"
 	"github.com/jotajotape/github-go-server-mcp/internal/hybrid"
+	"github.com/jotajotape/github-go-server-mcp/internal/interfaces"
 	"github.com/jotajotape/github-go-server-mcp/internal/types"
 )
 
+// MCPServer representa el servidor MCP principal
+type MCPServer struct {
+	GithubClient interfaces.GitHubOperations
+	GitClient    interfaces.GitOperations
+}
+
 // HandleRequest procesa las peticiones JSON-RPC del protocolo MCP
-func HandleRequest(s *types.MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse {
+func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse {
 	id := req.ID
 	if id == nil {
 		id = 0
 	}
-	
+
 	response := types.JSONRPCResponse{
 		JSONRPC: "2.0",
 		ID:      id,
@@ -159,7 +166,7 @@ func ListTools() types.ToolsListResult {
 				},
 			},
 		},
-		
+
 		// Herramientas Git locales básicas
 		{
 			Name:        "git_add",
@@ -215,7 +222,7 @@ func ListTools() types.ToolsListResult {
 				Required: []string{"branch"},
 			},
 		},
-		
+
 		// Herramientas Git avanzadas
 		{
 			Name:        "git_log_analysis",
@@ -254,7 +261,7 @@ func ListTools() types.ToolsListResult {
 				Type: "object",
 				Properties: map[string]types.Property{
 					"operation": {Type: "string", Description: "Operación: list, push, pop, apply, drop, clear"},
-					"name": {Type: "string", Description: "Nombre del stash (opcional)"},
+					"name":      {Type: "string", Description: "Nombre del stash (opcional)"},
 				},
 				Required: []string{"operation"},
 			},
@@ -266,8 +273,8 @@ func ListTools() types.ToolsListResult {
 				Type: "object",
 				Properties: map[string]types.Property{
 					"operation": {Type: "string", Description: "Operación: list, add, remove, show, fetch"},
-					"name": {Type: "string", Description: "Nombre del remoto"},
-					"url": {Type: "string", Description: "URL del remoto (para add)"},
+					"name":      {Type: "string", Description: "Nombre del remoto"},
+					"url":       {Type: "string", Description: "URL del remoto (para add)"},
 				},
 				Required: []string{"operation"},
 			},
@@ -279,8 +286,8 @@ func ListTools() types.ToolsListResult {
 				Type: "object",
 				Properties: map[string]types.Property{
 					"operation": {Type: "string", Description: "Operación: list, create, delete, push, show"},
-					"tag_name": {Type: "string", Description: "Nombre del tag"},
-					"message": {Type: "string", Description: "Mensaje del tag (para create)"},
+					"tag_name":  {Type: "string", Description: "Nombre del tag"},
+					"message":   {Type: "string", Description: "Mensaje del tag (para create)"},
 				},
 				Required: []string{"operation"},
 			},
@@ -292,20 +299,20 @@ func ListTools() types.ToolsListResult {
 				Type: "object",
 				Properties: map[string]types.Property{
 					"operation": {Type: "string", Description: "Tipo: untracked, untracked_dirs, ignored, all"},
-					"dry_run": {Type: "boolean", Description: "Vista previa sin ejecutar (default: true)"},
+					"dry_run":   {Type: "boolean", Description: "Vista previa sin ejecutar (default: true)"},
 				},
 				Required: []string{"operation"},
 			},
 		},
 		{
-			Name:        "git_context", 
+			Name:        "git_context",
 			Description: "🔧 Auto-detecta contexto Git para optimizar tokens (Git local vs GitHub API)",
 			InputSchema: types.ToolInputSchema{
 				Type:       "object",
 				Properties: map[string]types.Property{},
 			},
 		},
-				
+
 		// Herramientas híbridas
 		{
 			Name:        "create_file",
@@ -323,7 +330,7 @@ func ListTools() types.ToolsListResult {
 			},
 		},
 		{
-			Name:        "update_file", 
+			Name:        "update_file",
 			Description: "✅ Actualiza archivo PRIORIZANDO Git local (0 tokens) sobre GitHub API",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
@@ -338,7 +345,7 @@ func ListTools() types.ToolsListResult {
 				Required: []string{"path", "content"},
 			},
 		},
-		
+
 		// Herramientas API puras
 		{
 			Name:        "github_list_repos",
@@ -398,7 +405,7 @@ func ListTools() types.ToolsListResult {
 }
 
 // CallTool ejecuta la herramienta solicitada
-func CallTool(s *types.MCPServer, params map[string]interface{}) (types.ToolCallResult, error) {
+func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult, error) {
 	name, ok := params["name"].(string)
 	if !ok {
 		return types.ToolCallResult{}, fmt.Errorf("tool name required")
@@ -416,101 +423,139 @@ func CallTool(s *types.MCPServer, params map[string]interface{}) (types.ToolCall
 	switch name {
 	// Herramientas Git básicas
 	case "git_status":
-		text, err = git.Status(s.GitConfig)
+		text, err = s.GitClient.Status()
 	case "git_set_workspace":
 		path, _ := arguments["path"].(string)
-		text, err = git.SetWorkspace(&s.GitConfig, path)
+		text, err = s.GitClient.SetWorkspace(path)
 	case "git_get_file_sha":
 		path, _ := arguments["path"].(string)
-		text, err = git.GetFileSHA(s.GitConfig, path)
+		text, err = s.GitClient.GetFileSHA(path)
 	case "git_get_last_commit":
-		text, err = git.GetLastCommitSHA(s.GitConfig)
+		text, err = s.GitClient.GetLastCommit()
 	case "git_get_file_content":
 		path, _ := arguments["path"].(string)
 		ref, _ := arguments["ref"].(string)
-		text, err = git.GetFileContent(s.GitConfig, path, ref)
+		text, err = s.GitClient.GetFileContent(path, ref)
 	case "git_get_changed_files":
 		staged, _ := arguments["staged"].(bool)
-		text, err = git.GetChangedFiles(s.GitConfig, staged)
+		text, err = s.GitClient.GetChangedFiles(staged)
 	case "git_validate_repo":
 		path, _ := arguments["path"].(string)
-		text, err = git.ValidateRepository(path)
+		text, err = s.GitClient.ValidateRepo(path)
 	case "git_list_files":
 		ref, _ := arguments["ref"].(string)
-		text, err = git.ListFiles(s.GitConfig, ref)
+		text, err = s.GitClient.ListFiles(ref)
 	case "git_add":
 		files, _ := arguments["files"].(string)
-		text, err = git.Add(s.GitConfig, files)
+		text, err = s.GitClient.Add(files)
 	case "git_commit":
 		message, _ := arguments["message"].(string)
-		text, err = git.Commit(s.GitConfig, message)
+		text, err = s.GitClient.Commit(message)
 	case "git_push":
 		branch, _ := arguments["branch"].(string)
-		text, err = git.Push(s.GitConfig, branch)
+		text, err = s.GitClient.Push(branch)
 	case "git_pull":
 		branch, _ := arguments["branch"].(string)
-		text, err = git.Pull(s.GitConfig, branch)
+		text, err = s.GitClient.Pull(branch)
 	case "git_checkout":
 		branch, _ := arguments["branch"].(string)
 		create, _ := arguments["create"].(bool)
-		text, err = git.Checkout(&s.GitConfig, branch, create)
-		
+		text, err = s.GitClient.Checkout(branch, create)
+
 	// Herramientas Git avanzadas
 	case "git_log_analysis":
 		limit, _ := arguments["limit"].(string)
-		text, err = git.LogAnalysis(s.GitConfig, limit)
+		text, err = s.GitClient.LogAnalysis(limit)
 	case "git_diff_files":
 		staged, _ := arguments["staged"].(bool)
-		text, err = git.DiffFiles(s.GitConfig, staged)
+		text, err = s.GitClient.DiffFiles(staged)
 	case "git_branch_list":
 		remote, _ := arguments["remote"].(bool)
-		text, err = git.BranchList(s.GitConfig, remote)
+		branches, branchErr := s.GitClient.BranchList(remote)
+		if branchErr != nil {
+			err = branchErr
+		} else {
+			// Convertir a JSON para una salida más estructurada
+			jsonOutput, jsonErr := json.MarshalIndent(branches, "", "  ")
+			if jsonErr != nil {
+				err = fmt.Errorf("failed to marshal branch list: %w", jsonErr)
+			} else {
+				text = string(jsonOutput)
+			}
+		}
 	case "git_stash":
 		operation, _ := arguments["operation"].(string)
 		name, _ := arguments["name"].(string)
-		text, err = git.StashOperations(s.GitConfig, operation, name)
+		text, err = s.GitClient.Stash(operation, name)
 	case "git_remote":
 		operation, _ := arguments["operation"].(string)
 		name, _ := arguments["name"].(string)
 		url, _ := arguments["url"].(string)
-		text, err = git.RemoteOperations(s.GitConfig, operation, name, url)
+		text, err = s.GitClient.Remote(operation, name, url)
 	case "git_tag":
 		operation, _ := arguments["operation"].(string)
 		tagName, _ := arguments["tag_name"].(string)
 		message, _ := arguments["message"].(string)
-		text, err = git.TagOperations(s.GitConfig, operation, tagName, message)
+		text, err = s.GitClient.Tag(operation, tagName, message)
 	case "git_clean":
 		operation, _ := arguments["operation"].(string)
 		dryRun, exists := arguments["dry_run"].(bool)
 		if !exists {
 			dryRun = true // default a true para seguridad
 		}
-		text, err = git.CleanOperations(s.GitConfig, operation, dryRun)
-	
+		text, err = s.GitClient.Clean(operation, dryRun)
+
 	case "git_context":
-		text = hybrid.AutoDetectContext(s.GitConfig)
-		err = nil	
-		
+		text = hybrid.AutoDetectContext(s.GitClient)
+		err = nil
+
 	// Herramientas híbridas
 	case "create_file":
-		text, err = hybrid.SmartCreateFile(s.GitConfig, s.GithubClient, arguments)
+		text, err = hybrid.SmartCreateFile(s.GitClient, s.GithubClient, arguments)
 	case "update_file":
-		text, err = hybrid.SmartUpdateFile(s.GitConfig, s.GithubClient, arguments)
-			
+		text, err = hybrid.SmartUpdateFile(s.GitClient, s.GithubClient, arguments)
+
 	// Herramientas API puras
 	case "github_list_repos":
 		listType, _ := arguments["type"].(string)
-		text, err = githubapi.ListRepositories(s.GithubClient, ctx, listType)
+		repos, listErr := s.GithubClient.ListRepositories(ctx, listType)
+		if listErr != nil {
+			err = listErr
+		} else {
+			var repoNames []string
+			for _, repo := range repos {
+				repoNames = append(repoNames, repo.GetFullName())
+			}
+			text = fmt.Sprintf("Repositories:\n%s", strings.Join(repoNames, "\n"))
+		}
 	case "github_create_repo":
 		name, _ := arguments["name"].(string)
 		description, _ := arguments["description"].(string)
 		private, _ := arguments["private"].(bool)
-		text, err = githubapi.CreateRepository(s.GithubClient, ctx, name, description, private)
+		repo, createErr := s.GithubClient.CreateRepository(ctx, name, description, private)
+		if createErr != nil {
+			err = createErr
+		} else {
+			text = fmt.Sprintf("Successfully created repository: %s", repo.GetFullName())
+		}
 	case "github_list_prs":
 		owner, _ := arguments["owner"].(string)
 		repo, _ := arguments["repo"].(string)
 		state, _ := arguments["state"].(string)
-		text, err = githubapi.ListPullRequests(s.GithubClient, ctx, owner, repo, state)
+		prs, listErr := s.GithubClient.ListPullRequests(ctx, owner, repo, state)
+		if listErr != nil {
+			err = listErr
+		} else {
+			var prInfo []string
+			for _, pr := range prs {
+				prInfo = append(prInfo, fmt.Sprintf("#%d: %s", pr.GetNumber(), pr.GetTitle()))
+			}
+			if len(prInfo) == 0 {
+				text = "No pull requests found."
+			} else {
+				text = fmt.Sprintf("Pull Requests:\n%s", strings.Join(prInfo, "\n"))
+			}
+		}
 	case "github_create_pr":
 		owner, _ := arguments["owner"].(string)
 		repo, _ := arguments["repo"].(string)
@@ -518,7 +563,12 @@ func CallTool(s *types.MCPServer, params map[string]interface{}) (types.ToolCall
 		body, _ := arguments["body"].(string)
 		head, _ := arguments["head"].(string)
 		base, _ := arguments["base"].(string)
-		text, err = githubapi.CreatePullRequest(s.GithubClient, ctx, owner, repo, title, body, head, base)
+		pr, createErr := s.GithubClient.CreatePullRequest(ctx, owner, repo, title, body, head, base)
+		if createErr != nil {
+			err = createErr
+		} else {
+			text = fmt.Sprintf("Successfully created pull request #%d: %s", pr.GetNumber(), pr.GetHTMLURL())
+		}
 	default:
 		return types.ToolCallResult{}, fmt.Errorf("tool not found")
 	}

@@ -1,13 +1,5 @@
 package types
 
-import "github.com/google/go-github/v66/github"
-
-// MCPServer representa el servidor MCP principal
-type MCPServer struct {
-	GithubClient *github.Client
-	GitConfig    GitConfig
-}
-
 // GitConfig contiene la configuración del entorno Git local
 type GitConfig struct {
 	HasGit        bool   `json:"hasGit"`
@@ -16,6 +8,14 @@ type GitConfig struct {
 	CurrentBranch string `json:"currentBranch"`
 	IsGitRepo     bool   `json:"isGitRepo"`
 	WorkspacePath string `json:"workspacePath"` // Directorio de trabajo configurado manualmente
+}
+
+// BranchInfo contiene información sobre una rama de Git.
+type BranchInfo struct {
+	Name       string `json:"name"`
+	IsCurrent  bool   `json:"isCurrent"`
+	CommitSHA  string `json:"commitSha"`
+	CommitDate string `json:"commitDate"`
 }
 
 // Estructuras del protocolo JSON-RPC 2.0

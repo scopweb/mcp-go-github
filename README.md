@@ -2,6 +2,8 @@
 
 Go-based MCP server that connects GitHub to Claude Desktop, enabling direct repository operations from Claude's interface.
 
+**🎯 Latest Update:** Updated to `go-github v74.0.0` for enhanced stability and compatibility.
+
 ## ✨ Nuevas Características
 
 ### 🎯 **Soporte de Perfiles Múltiples**
@@ -42,6 +44,24 @@ go mod tidy
 
 # Compilar (usando el script incluido)
 .\compile.bat
+
+# O compilar manualmente
+go build -o github-mcp-modular.exe .
+```
+
+## 🧪 Testing
+
+El proyecto incluye tests unitarios completos:
+
+```bash
+# Ejecutar todos los tests
+go test ./...
+
+# Ejecutar tests con verbose
+go test ./... -v
+
+# Ejecutar tests de un módulo específico
+go test ./internal/hybrid/ -v
 ```
 
 ## ⚙️ Configuración Claude Desktop
@@ -155,5 +175,16 @@ Con estos cambios, el MCP es ahora mucho más seguro. ¡Un saludo, amigo!
 - ✅ **Sistema híbrido Git**: Git local + GitHub API
 - ✅ **Soporte multi-perfil**: Implementado y testeado
 - ✅ **Gestión de permisos**: Documentada y verificada
-- ✅ **Testing completo**: Todas las funciones probadas
-- ✅ **Listo para producción**: Stable release v2.0
+- ✅ **Testing completo**: Todas las funciones probadas con tests unitarios
+- ✅ **Dependencias actualizadas**: go-github v74.0.0 (latest stable)
+- ✅ **Listo para producción**: Stable release v2.1
+
+## 🔧 Requisitos del Sistema
+
+- **Go**: 1.19 o superior
+- **Git**: Para operaciones locales (opcional pero recomendado)
+- **Windows**: PowerShell para scripts de compilación
+- **GitHub Token**: Con permisos `repo` mínimos
+
+
+ 

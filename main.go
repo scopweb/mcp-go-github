@@ -9,10 +9,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v74/github"
 	"golang.org/x/oauth2"
 
 	"github.com/jotajotape/github-go-server-mcp/internal/git"
+	githubclient "github.com/jotajotape/github-go-server-mcp/internal/github"
 	"github.com/jotajotape/github-go-server-mcp/internal/server"
 	"github.com/jotajotape/github-go-server-mcp/internal/types"
 )
@@ -47,12 +48,12 @@ func main() {
 		if err != nil {
 			continue
 		}
-		
+
 		fmt.Println(string(output))
 	}
 }
 
-func NewMCPServer(profile string) (*types.MCPServer, error) {
+func NewMCPServer(profile string) (*server.MCPServer, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		return nil, fmt.Errorf("GITHUB_TOKEN required for profile: %s", profile)
@@ -67,18 +68,29 @@ func NewMCPServer(profile string) (*types.MCPServer, error) {
 
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(context.Background(), ts)
-	githubClient := github.NewClient(tc)
+	ghClient := github.NewClient(tc)
 
-	// Detectar entorno Git
-	gitConfig := git.DetectGitEnvironment()
-	
-	// Agregar perfil al gitConfig para logging
-	if gitConfig.HasGit {
-		log.Printf("🔧 Git environment detected for profile: %s", profile)
+	// Crear cliente Git
+	gitClient, err := git.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("error creating git client: %w", err)
 	}
 
-	return &types.MCPServer{
+	// Log del estado de Git
+	if gitClient.HasGit() && gitClient.IsGitRepo() {
+		log.Printf("🔧 Git local detected for profile: %s", profile)
+	} else if gitClient.HasGit() {
+		log.Printf("⚠️ Git available but not in repo for profile: %s", profile)
+	} else {
+		log.Printf("📡 Git not available, API-only mode for profile: %s", profile)
+	}
+
+	// Crear cliente GitHub
+	githubClient := githubclient.NewClient(ghClient)
+	log.Printf("🔧 GitHub client initialized for profile: %s", profile)
+
+	return &server.MCPServer{
 		GithubClient: githubClient,
-		GitConfig:    gitConfig,
+		GitClient:    gitClient,
 	}, nil
 }
