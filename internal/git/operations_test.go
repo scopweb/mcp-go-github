@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/types"
+	"github.com/scopweb/mcp-go-github/internal/types"
 )
 
 // mockCmd is a mock for cmdWrapper

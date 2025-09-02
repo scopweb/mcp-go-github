@@ -1,4 +1,4 @@
-module github.com/jotajotape/github-go-server-mcp
+module github.com/scopweb/mcp-go-github
 
 go 1.23.0
 

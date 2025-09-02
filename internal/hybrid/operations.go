@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/interfaces"
+	"github.com/scopweb/mcp-go-github/internal/interfaces"
 )
 
 // stat is a variable that can be replaced in tests for mocking file existence

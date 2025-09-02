@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/hybrid"
-	"github.com/jotajotape/github-go-server-mcp/internal/interfaces"
-	"github.com/jotajotape/github-go-server-mcp/internal/types"
+	"github.com/scopweb/mcp-go-github/internal/hybrid"
+	"github.com/scopweb/mcp-go-github/internal/interfaces"
+	"github.com/scopweb/mcp-go-github/internal/types"
 )
 
 // MCPServer representa el servidor MCP principal

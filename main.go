@@ -12,10 +12,10 @@ import (
 	"github.com/google/go-github/v74/github"
 	"golang.org/x/oauth2"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/git"
-	githubclient "github.com/jotajotape/github-go-server-mcp/internal/github"
-	"github.com/jotajotape/github-go-server-mcp/internal/server"
-	"github.com/jotajotape/github-go-server-mcp/internal/types"
+	"github.com/scopweb/mcp-go-github/internal/git"
+	githubclient "github.com/scopweb/mcp-go-github/internal/github"
+	"github.com/scopweb/mcp-go-github/internal/server"
+	"github.com/scopweb/mcp-go-github/internal/types"
 )
 
 func main() {
