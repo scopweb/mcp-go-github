@@ -21,6 +21,8 @@ This is a **Go-based MCP (Model Context Protocol) server** that provides GitHub 
 - **Hybrid operations**: Prioritizes local Git commands to minimize API token usage
 - **MCP protocol compliance**: Implements JSON-RPC 2.0 for Claude Desktop integration
 - **Smart Git detection**: Automatically detects Git environment and repository state
+- **Advanced Git operations**: 13 new operations including remote checkout, merge strategies, conflict resolution
+- **Safety features**: Automatic backups, clean state validation, conflict detection
 
 ## Development Commands
 
@@ -78,13 +80,15 @@ The server supports both single-token and multi-profile configurations:
 
 ## Available MCP Tools
 
-The server provides 15+ tools organized into categories:
+The server provides 25+ tools organized into categories:
 - **Repository operations**: list_repos, create_repo, get_repo
-- **Branch management**: list_branches
+- **Branch management**: list_branches, checkout_remote, merge, rebase
 - **Pull requests**: list_prs, create_pr
 - **Issues**: list_issues, create_issue
-- **Local Git**: git_status, git_list_files
+- **Local Git**: git_status, git_list_files, pull_with_strategy, force_push, push_upstream
 - **File operations**: create_file, update_file (hybrid mode)
+- **Advanced Git**: sync_with_remote, safe_merge, conflict_status, resolve_conflicts
+- **Safety tools**: validate_clean_state, detect_conflicts, create_backup
 
 ## Development Notes
 

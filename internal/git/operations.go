@@ -963,3 +963,617 @@ func (c *Client) GetCurrentBranch() string {
 func (c *Client) GetRemoteURL() string {
 	return c.Config.RemoteURL
 }
+
+// Advanced branch operations
+
+func (c *Client) CheckoutRemote(remoteBranch string, localBranch string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Ensure we have the latest remote info
+	fetchCmd := c.executor.Command("git", "fetch", "origin")
+	if output, err := fetchCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("error en fetch: %v, Output: %s", err, output)
+	}
+
+	// If no local branch specified, use remote branch name without origin/
+	if localBranch == "" {
+		parts := strings.Split(remoteBranch, "/")
+		if len(parts) > 1 {
+			localBranch = parts[len(parts)-1]
+		} else {
+			localBranch = remoteBranch
+		}
+	}
+
+	// Check if local branch already exists
+	checkCmd := c.executor.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+localBranch)
+	if _, err := checkCmd.CombinedOutput(); err == nil {
+		// Local branch exists, just checkout and pull
+		checkoutCmd := c.executor.Command("git", "checkout", localBranch)
+		if output, err := checkoutCmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error en checkout: %v, Output: %s", err, output)
+		}
+		
+		pullCmd := c.executor.Command("git", "pull", "origin", remoteBranch)
+		if output, err := pullCmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error en pull: %v, Output: %s", err, output)
+		}
+	} else {
+		// Create new local branch tracking remote
+		cmd := c.executor.Command("git", "checkout", "-b", localBranch, "origin/"+remoteBranch)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error en checkout remoto: %v, Output: %s", err, output)
+		}
+	}
+
+	c.Config.CurrentBranch = localBranch
+	return fmt.Sprintf("Checkout remoto exitoso: %s -> %s", remoteBranch, localBranch), nil
+}
+
+func (c *Client) Merge(sourceBranch string, targetBranch string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Validate clean state
+	if clean, err := c.ValidateCleanState(); err != nil {
+		return "", fmt.Errorf("error validando estado: %v", err)
+	} else if !clean {
+		return "", fmt.Errorf("el directorio de trabajo debe estar limpio para hacer merge")
+	}
+
+	// If no target branch specified, use current branch
+	if targetBranch == "" {
+		targetBranch = c.Config.CurrentBranch
+	} else if targetBranch != c.Config.CurrentBranch {
+		// Checkout to target branch
+		checkoutCmd := c.executor.Command("git", "checkout", targetBranch)
+		if output, err := checkoutCmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error cambiando a rama %s: %v, Output: %s", targetBranch, err, output)
+		}
+		c.Config.CurrentBranch = targetBranch
+	}
+
+	// Perform merge
+	mergeCmd := c.executor.Command("git", "merge", sourceBranch)
+	output, err := mergeCmd.CombinedOutput()
+	if err != nil {
+		// Check if it's a conflict
+		statusCmd := c.executor.Command("git", "status", "--porcelain")
+		statusOut, _ := statusCmd.Output()
+		if strings.Contains(string(statusOut), "UU") || strings.Contains(string(output), "CONFLICT") {
+			return "", fmt.Errorf("conflictos de merge detectados. Usa 'ConflictStatus' para ver detalles y 'ResolveConflicts' para resolverlos: %s", output)
+		}
+		return "", fmt.Errorf("error en merge: %v, Output: %s", err, output)
+	}
+
+	return fmt.Sprintf("Merge exitoso: %s -> %s", sourceBranch, targetBranch), nil
+}
+
+func (c *Client) Rebase(branch string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Validate clean state
+	if clean, err := c.ValidateCleanState(); err != nil {
+		return "", fmt.Errorf("error validando estado: %v", err)
+	} else if !clean {
+		return "", fmt.Errorf("el directorio de trabajo debe estar limpio para hacer rebase")
+	}
+
+	// Perform rebase
+	rebaseCmd := c.executor.Command("git", "rebase", branch)
+	output, err := rebaseCmd.CombinedOutput()
+	if err != nil {
+		// Check if it's a conflict
+		if strings.Contains(string(output), "CONFLICT") {
+			return "", fmt.Errorf("conflictos de rebase detectados. Usa 'ConflictStatus' para ver detalles: %s", output)
+		}
+		return "", fmt.Errorf("error en rebase: %v, Output: %s", err, output)
+	}
+
+	return fmt.Sprintf("Rebase exitoso en rama: %s", branch), nil
+}
+
+// Enhanced pull/push operations
+
+func (c *Client) PullWithStrategy(branch string, strategy string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	if branch == "" {
+		branch = c.Config.CurrentBranch
+	}
+
+	var cmd cmdWrapper
+	switch strategy {
+	case "merge":
+		cmd = c.executor.Command("git", "pull", "--no-rebase", "origin", branch)
+	case "rebase":
+		cmd = c.executor.Command("git", "pull", "--rebase", "origin", branch)
+	case "ff-only":
+		cmd = c.executor.Command("git", "pull", "--ff-only", "origin", branch)
+	default:
+		return "", fmt.Errorf("estrategia no válida: %s. Usa: merge, rebase, ff-only", strategy)
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(output), "CONFLICT") {
+			return "", fmt.Errorf("conflictos detectados durante pull con estrategia %s: %s", strategy, output)
+		}
+		return "", fmt.Errorf("error en pull con estrategia %s: %v, Output: %s", strategy, err, output)
+	}
+
+	return fmt.Sprintf("Pull con estrategia '%s' exitoso en rama: %s", strategy, branch), nil
+}
+
+func (c *Client) ForcePush(branch string, force bool) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	if branch == "" {
+		branch = c.Config.CurrentBranch
+	}
+
+	// Get remote name
+	remoteCmd := c.executor.Command("git", "remote")
+	remoteOutput, err := remoteCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error obteniendo remotos: %v", err)
+	}
+	remotes := strings.Fields(string(remoteOutput))
+	if len(remotes) == 0 {
+		return "", errors.New("no se encontraron remotos")
+	}
+	remote := remotes[0]
+
+	var cmd cmdWrapper
+	if force {
+		// Create backup before force push
+		backupName := fmt.Sprintf("backup-before-force-push-%s", branch)
+		if _, err := c.CreateBackup(backupName); err != nil {
+			return "", fmt.Errorf("error creando backup antes de force push: %v", err)
+		}
+		
+		cmd = c.executor.Command("git", "push", "--force-with-lease", remote, branch)
+	} else {
+		cmd = c.executor.Command("git", "push", remote, branch)
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("error en push: %v, Output: %s", err, output)
+	}
+
+	if force {
+		return fmt.Sprintf("Force push exitoso (con backup): %s a %s", branch, remote), nil
+	}
+	return fmt.Sprintf("Push exitoso: %s a %s", branch, remote), nil
+}
+
+func (c *Client) PushUpstream(branch string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	if branch == "" {
+		branch = c.Config.CurrentBranch
+	}
+
+	// Get remote name
+	remoteCmd := c.executor.Command("git", "remote")
+	remoteOutput, err := remoteCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error obteniendo remotos: %v", err)
+	}
+	remotes := strings.Fields(string(remoteOutput))
+	if len(remotes) == 0 {
+		return "", errors.New("no se encontraron remotos")
+	}
+	remote := remotes[0]
+
+	cmd := c.executor.Command("git", "push", "-u", remote, branch)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("error en push upstream: %v, Output: %s", err, output)
+	}
+
+	return fmt.Sprintf("Push upstream exitoso: %s configurado para trackear %s/%s", branch, remote, branch), nil
+}
+
+// Batch operations
+
+func (c *Client) SyncWithRemote(remoteBranch string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	results := []string{}
+
+	// 1. Fetch from remote
+	fetchCmd := c.executor.Command("git", "fetch", "origin")
+	if output, err := fetchCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("error en fetch: %v, Output: %s", err, output)
+	}
+	results = append(results, "Fetch completado")
+
+	// 2. Check if we need to merge
+	currentBranch := c.Config.CurrentBranch
+	if remoteBranch == "" {
+		remoteBranch = currentBranch
+	}
+
+	// Check if remote branch exists
+	checkCmd := c.executor.Command("git", "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+remoteBranch)
+	if _, err := checkCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("rama remota no encontrada: origin/%s", remoteBranch)
+	}
+
+	// 3. Check if fast-forward is possible
+	mergeBaseCmd := c.executor.Command("git", "merge-base", currentBranch, "origin/"+remoteBranch)
+	mergeBase, _ := mergeBaseCmd.Output()
+	
+	currentCommitCmd := c.executor.Command("git", "rev-parse", currentBranch)
+	currentCommit, _ := currentCommitCmd.Output()
+
+	if strings.TrimSpace(string(mergeBase)) == strings.TrimSpace(string(currentCommit)) {
+		// Fast-forward possible
+		mergeCmd := c.executor.Command("git", "merge", "--ff-only", "origin/"+remoteBranch)
+		if output, err := mergeCmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error en fast-forward: %v, Output: %s", err, output)
+		}
+		results = append(results, "Fast-forward merge completado")
+	} else {
+		// Need regular merge
+		if clean, err := c.ValidateCleanState(); err != nil {
+			return "", fmt.Errorf("error validando estado: %v", err)
+		} else if !clean {
+			return "", fmt.Errorf("el directorio debe estar limpio para sincronizar")
+		}
+
+		mergeCmd := c.executor.Command("git", "merge", "origin/"+remoteBranch)
+		if output, err := mergeCmd.CombinedOutput(); err != nil {
+			if strings.Contains(string(output), "CONFLICT") {
+				return "", fmt.Errorf("conflictos detectados durante sincronización: %s", output)
+			}
+			return "", fmt.Errorf("error en merge: %v, Output: %s", err, output)
+		}
+		results = append(results, "Merge completado")
+	}
+
+	return fmt.Sprintf("Sincronización exitosa con origin/%s: %s", remoteBranch, strings.Join(results, ", ")), nil
+}
+
+func (c *Client) SafeMerge(source string, target string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// 1. Create backup
+	backupName := fmt.Sprintf("safe-merge-backup-%s", target)
+	if _, err := c.CreateBackup(backupName); err != nil {
+		return "", fmt.Errorf("error creando backup: %v", err)
+	}
+
+	// 2. Validate clean state
+	if clean, err := c.ValidateCleanState(); err != nil {
+		return "", fmt.Errorf("error validando estado: %v", err)
+	} else if !clean {
+		return "", fmt.Errorf("el directorio debe estar limpio para safe merge")
+	}
+
+	// 3. Check for potential conflicts
+	if conflicts, err := c.DetectPotentialConflicts(source, target); err != nil {
+		return "", fmt.Errorf("error detectando conflictos: %v", err)
+	} else if conflicts != "" {
+		return "", fmt.Errorf("conflictos potenciales detectados: %s", conflicts)
+	}
+
+	// 4. Perform merge
+	originalBranch := c.Config.CurrentBranch
+	
+	// Switch to target branch if needed
+	if target != "" && target != originalBranch {
+		checkoutCmd := c.executor.Command("git", "checkout", target)
+		if output, err := checkoutCmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error cambiando a rama %s: %v, Output: %s", target, err, output)
+		}
+		c.Config.CurrentBranch = target
+	}
+
+	// Perform merge
+	mergeCmd := c.executor.Command("git", "merge", "--no-ff", source)
+	output, err := mergeCmd.CombinedOutput()
+	if err != nil {
+		// Rollback on error
+		resetCmd := c.executor.Command("git", "reset", "--hard", "HEAD~1")
+		resetCmd.CombinedOutput()
+		
+		return "", fmt.Errorf("safe merge falló, rollback realizado: %v, Output: %s", err, output)
+	}
+
+	return fmt.Sprintf("Safe merge exitoso: %s -> %s (backup creado: %s)", source, target, backupName), nil
+}
+
+// Conflict management
+
+func (c *Client) ConflictStatus() (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	result := map[string]interface{}{}
+
+	// Check if in merge state
+	mergeHeadPath := filepath.Join(c.Config.RepoPath, ".git", "MERGE_HEAD")
+	if _, err := os.Stat(mergeHeadPath); err == nil {
+		result["inMergeState"] = true
+		
+		// Get merge message if exists
+		mergeMsgPath := filepath.Join(c.Config.RepoPath, ".git", "MERGE_MSG")
+		if msgBytes, err := os.ReadFile(mergeMsgPath); err == nil {
+			result["mergeMessage"] = string(msgBytes)
+		}
+	} else {
+		result["inMergeState"] = false
+	}
+
+	// Check if in rebase state
+	rebaseDirPath := filepath.Join(c.Config.RepoPath, ".git", "rebase-merge")
+	rebaseApplyPath := filepath.Join(c.Config.RepoPath, ".git", "rebase-apply")
+	if _, err := os.Stat(rebaseDirPath); err == nil {
+		result["inRebaseState"] = true
+	} else if _, err := os.Stat(rebaseApplyPath); err == nil {
+		result["inRebaseState"] = true
+	} else {
+		result["inRebaseState"] = false
+	}
+
+	// Get conflicted files
+	statusCmd := c.executor.Command("git", "status", "--porcelain")
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error obteniendo status: %v", err)
+	}
+
+	conflictedFiles := []string{}
+	lines := strings.Split(string(statusOutput), "\n")
+	for _, line := range lines {
+		if len(line) > 2 && (line[:2] == "UU" || line[:2] == "AA" || line[:2] == "DD" || 
+			strings.Contains(line[:2], "U") || strings.Contains(line[:2], "A")) {
+			conflictedFiles = append(conflictedFiles, strings.TrimSpace(line[2:]))
+		}
+	}
+	
+	result["conflictedFiles"] = conflictedFiles
+	result["hasConflicts"] = len(conflictedFiles) > 0
+
+	output, _ := json.MarshalIndent(result, "", "  ")
+	return string(output), nil
+}
+
+func (c *Client) ResolveConflicts(strategy string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	var cmd cmdWrapper
+	var result string
+
+	switch strategy {
+	case "theirs":
+		// Accept their version for all conflicts
+		cmd = c.executor.Command("git", "checkout", "--theirs", ".")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error aceptando cambios remotos: %v, Output: %s", err, output)
+		}
+		
+		// Add resolved files
+		addCmd := c.executor.Command("git", "add", ".")
+		if output, err := addCmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error agregando archivos resueltos: %v, Output: %s", err, output)
+		}
+		
+		result = "Conflictos resueltos aceptando versión remota (theirs)"
+		
+	case "ours":
+		// Accept our version for all conflicts
+		cmd = c.executor.Command("git", "checkout", "--ours", ".")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error aceptando cambios locales: %v, Output: %s", err, output)
+		}
+		
+		// Add resolved files
+		addCmd := c.executor.Command("git", "add", ".")
+		if output, err := addCmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error agregando archivos resueltos: %v, Output: %s", err, output)
+		}
+		
+		result = "Conflictos resueltos aceptando versión local (ours)"
+		
+	case "abort":
+		// Check if in merge state
+		mergeHeadPath := filepath.Join(c.Config.RepoPath, ".git", "MERGE_HEAD")
+		if _, err := os.Stat(mergeHeadPath); err == nil {
+			cmd = c.executor.Command("git", "merge", "--abort")
+		} else {
+			// Check if in rebase state
+			rebaseDirPath := filepath.Join(c.Config.RepoPath, ".git", "rebase-merge")
+			rebaseApplyPath := filepath.Join(c.Config.RepoPath, ".git", "rebase-apply")
+			_, rebaseDirErr := os.Stat(rebaseDirPath)
+			_, rebaseApplyErr := os.Stat(rebaseApplyPath)
+			if rebaseDirErr == nil || rebaseApplyErr == nil {
+				cmd = c.executor.Command("git", "rebase", "--abort")
+			} else {
+				return "", fmt.Errorf("no hay operación de merge o rebase activa para abortar")
+			}
+		}
+		
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("error abortando operación: %v, Output: %s", err, output)
+		}
+		
+		result = "Operación abortada, repositorio restaurado"
+		
+	case "manual":
+		// Just report conflicted files for manual resolution
+		statusResult, err := c.ConflictStatus()
+		if err != nil {
+			return "", fmt.Errorf("error obteniendo status de conflictos: %v", err)
+		}
+		result = fmt.Sprintf("Resolución manual requerida. Status: %s", statusResult)
+		
+	default:
+		return "", fmt.Errorf("estrategia no válida: %s. Usa: theirs, ours, abort, manual", strategy)
+	}
+
+	return result, nil
+}
+
+// Validation operations
+
+func (c *Client) ValidateCleanState() (bool, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return false, fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	cmd := c.executor.Command("git", "status", "--porcelain")
+	output, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("error obteniendo status: %v", err)
+	}
+
+	// Empty output means clean state
+	return strings.TrimSpace(string(output)) == "", nil
+}
+
+func (c *Client) DetectPotentialConflicts(sourceBranch string, targetBranch string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Get merge base
+	mergeBaseCmd := c.executor.Command("git", "merge-base", sourceBranch, targetBranch)
+	mergeBase, err := mergeBaseCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error encontrando merge base: %v", err)
+	}
+	
+	mergeBaseHash := strings.TrimSpace(string(mergeBase))
+
+	// Get files changed in both branches since merge base
+	sourceFilesCmd := c.executor.Command("git", "diff", "--name-only", mergeBaseHash, sourceBranch)
+	sourceFiles, err := sourceFilesCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error obteniendo archivos de rama origen: %v", err)
+	}
+
+	targetFilesCmd := c.executor.Command("git", "diff", "--name-only", mergeBaseHash, targetBranch)
+	targetFiles, err := targetFilesCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error obteniendo archivos de rama destino: %v", err)
+	}
+
+	sourceSet := make(map[string]bool)
+	for _, file := range strings.Split(strings.TrimSpace(string(sourceFiles)), "\n") {
+		if file != "" {
+			sourceSet[file] = true
+		}
+	}
+
+	var conflictingFiles []string
+	for _, file := range strings.Split(strings.TrimSpace(string(targetFiles)), "\n") {
+		if file != "" && sourceSet[file] {
+			conflictingFiles = append(conflictingFiles, file)
+		}
+	}
+
+	if len(conflictingFiles) == 0 {
+		return "", nil
+	}
+
+	return fmt.Sprintf("Archivos potencialmente conflictivos: %s", strings.Join(conflictingFiles, ", ")), nil
+}
+
+func (c *Client) CreateBackup(name string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Create tag as backup
+	tagName := fmt.Sprintf("backup/%s", name)
+	
+	// Get current commit
+	commitCmd := c.executor.Command("git", "rev-parse", "HEAD")
+	commitHash, err := commitCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("error obteniendo commit actual: %v", err)
+	}
+
+	// Create backup tag
+	tagCmd := c.executor.Command("git", "tag", tagName, strings.TrimSpace(string(commitHash)))
+	output, err := tagCmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("error creando backup tag: %v, Output: %s", err, output)
+	}
+
+	return fmt.Sprintf("Backup creado: %s en commit %s", tagName, strings.TrimSpace(string(commitHash))[:8]), nil
+}

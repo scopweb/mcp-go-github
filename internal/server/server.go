@@ -313,6 +313,149 @@ func ListTools() types.ToolsListResult {
 			},
 		},
 
+		// Advanced Git Operations
+		{
+			Name:        "git_checkout_remote",
+			Description: "🚀 Hace checkout de una rama remota creando tracking local",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"remote_branch": {Type: "string", Description: "Nombre de la rama remota (ej: main, develop)"},
+					"local_branch":  {Type: "string", Description: "Nombre local (opcional, usa el mismo de la remota)"},
+				},
+				Required: []string{"remote_branch"},
+			},
+		},
+		{
+			Name:        "git_merge",
+			Description: "🔀 Merge de ramas con validaciones de seguridad",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"source_branch": {Type: "string", Description: "Rama origen del merge"},
+					"target_branch": {Type: "string", Description: "Rama destino (opcional, usa actual)"},
+				},
+				Required: []string{"source_branch"},
+			},
+		},
+		{
+			Name:        "git_rebase",
+			Description: "⚡ Rebase con rama especificada",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"branch": {Type: "string", Description: "Rama base para el rebase"},
+				},
+				Required: []string{"branch"},
+			},
+		},
+		{
+			Name:        "git_pull_with_strategy",
+			Description: "⬇️ Pull avanzado con estrategias específicas",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"branch":   {Type: "string", Description: "Rama a actualizar (opcional, usa actual)"},
+					"strategy": {Type: "string", Description: "Estrategia: merge, rebase, ff-only"},
+				},
+				Required: []string{"strategy"},
+			},
+		},
+		{
+			Name:        "git_force_push",
+			Description: "⬆️ Push con opción force (con backup automático)",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"branch": {Type: "string", Description: "Rama a subir (opcional, usa actual)"},
+					"force":  {Type: "boolean", Description: "Usar --force-with-lease"},
+				},
+				Required: []string{"force"},
+			},
+		},
+		{
+			Name:        "git_push_upstream",
+			Description: "⬆️ Push configurando upstream tracking",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"branch": {Type: "string", Description: "Rama a subir (opcional, usa actual)"},
+				},
+			},
+		},
+		{
+			Name:        "git_sync_with_remote",
+			Description: "🔄 Sincronización automática con rama remota (fetch + merge inteligente)",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"remote_branch": {Type: "string", Description: "Rama remota (opcional, usa actual)"},
+				},
+			},
+		},
+		{
+			Name:        "git_safe_merge",
+			Description: "🛡️ Merge seguro con backup automático y detección de conflictos",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"source": {Type: "string", Description: "Rama origen"},
+					"target": {Type: "string", Description: "Rama destino (opcional, usa actual)"},
+				},
+				Required: []string{"source"},
+			},
+		},
+		{
+			Name:        "git_conflict_status",
+			Description: "⚠️ Estado detallado de conflictos en merge/rebase",
+			InputSchema: types.ToolInputSchema{
+				Type:       "object",
+				Properties: map[string]types.Property{},
+			},
+		},
+		{
+			Name:        "git_resolve_conflicts",
+			Description: "🔧 Resolución automática de conflictos con estrategias",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"strategy": {Type: "string", Description: "Estrategia: theirs, ours, abort, manual"},
+				},
+				Required: []string{"strategy"},
+			},
+		},
+		{
+			Name:        "git_validate_clean_state",
+			Description: "✅ Valida que el working directory esté limpio",
+			InputSchema: types.ToolInputSchema{
+				Type:       "object",
+				Properties: map[string]types.Property{},
+			},
+		},
+		{
+			Name:        "git_detect_conflicts",
+			Description: "🔍 Detecta conflictos potenciales entre ramas",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"source_branch": {Type: "string", Description: "Rama origen"},
+					"target_branch": {Type: "string", Description: "Rama destino"},
+				},
+				Required: []string{"source_branch", "target_branch"},
+			},
+		},
+		{
+			Name:        "git_create_backup",
+			Description: "💾 Crea backup/tag del estado actual",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"name": {Type: "string", Description: "Nombre del backup"},
+				},
+				Required: []string{"name"},
+			},
+		},
+
 		// Herramientas híbridas
 		{
 			Name:        "create_file",
@@ -508,6 +651,69 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 	case "git_context":
 		text = hybrid.AutoDetectContext(s.GitClient)
 		err = nil
+
+	// Advanced Git Operations
+	case "git_checkout_remote":
+		remoteBranch, _ := arguments["remote_branch"].(string)
+		localBranch, _ := arguments["local_branch"].(string)
+		text, err = s.GitClient.CheckoutRemote(remoteBranch, localBranch)
+	case "git_merge":
+		sourceBranch, _ := arguments["source_branch"].(string)
+		targetBranch, _ := arguments["target_branch"].(string)
+		text, err = s.GitClient.Merge(sourceBranch, targetBranch)
+	case "git_rebase":
+		branch, _ := arguments["branch"].(string)
+		text, err = s.GitClient.Rebase(branch)
+	case "git_pull_with_strategy":
+		branch, _ := arguments["branch"].(string)
+		strategy, _ := arguments["strategy"].(string)
+		text, err = s.GitClient.PullWithStrategy(branch, strategy)
+	case "git_force_push":
+		branch, _ := arguments["branch"].(string)
+		force, _ := arguments["force"].(bool)
+		text, err = s.GitClient.ForcePush(branch, force)
+	case "git_push_upstream":
+		branch, _ := arguments["branch"].(string)
+		text, err = s.GitClient.PushUpstream(branch)
+	case "git_sync_with_remote":
+		remoteBranch, _ := arguments["remote_branch"].(string)
+		text, err = s.GitClient.SyncWithRemote(remoteBranch)
+	case "git_safe_merge":
+		source, _ := arguments["source"].(string)
+		target, _ := arguments["target"].(string)
+		text, err = s.GitClient.SafeMerge(source, target)
+	case "git_conflict_status":
+		text, err = s.GitClient.ConflictStatus()
+	case "git_resolve_conflicts":
+		strategy, _ := arguments["strategy"].(string)
+		text, err = s.GitClient.ResolveConflicts(strategy)
+	case "git_validate_clean_state":
+		clean, validateErr := s.GitClient.ValidateCleanState()
+		if validateErr != nil {
+			err = validateErr
+		} else {
+			if clean {
+				text = "✅ Working directory is clean"
+			} else {
+				text = "⚠️ Working directory has uncommitted changes"
+			}
+		}
+	case "git_detect_conflicts":
+		sourceBranch, _ := arguments["source_branch"].(string)
+		targetBranch, _ := arguments["target_branch"].(string)
+		conflictInfo, detectErr := s.GitClient.DetectPotentialConflicts(sourceBranch, targetBranch)
+		if detectErr != nil {
+			err = detectErr
+		} else {
+			if conflictInfo == "" {
+				text = "✅ No potential conflicts detected between branches"
+			} else {
+				text = fmt.Sprintf("⚠️ %s", conflictInfo)
+			}
+		}
+	case "git_create_backup":
+		name, _ := arguments["name"].(string)
+		text, err = s.GitClient.CreateBackup(name)
 
 	// Herramientas híbridas
 	case "create_file":

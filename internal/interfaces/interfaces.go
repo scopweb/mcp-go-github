@@ -36,6 +36,29 @@ type GitOperations interface {
 	Remote(operation, name, url string) (string, error)
 	Tag(operation, tagName, message string) (string, error)
 	Clean(operation string, dryRun bool) (string, error)
+	
+	// Advanced branch operations
+	CheckoutRemote(remoteBranch string, localBranch string) (string, error)
+	Merge(sourceBranch string, targetBranch string) (string, error)
+	Rebase(branch string) (string, error)
+	
+	// Enhanced pull/push operations
+	PullWithStrategy(branch string, strategy string) (string, error)
+	ForcePush(branch string, force bool) (string, error)
+	PushUpstream(branch string) (string, error)
+	
+	// Batch operations
+	SyncWithRemote(remoteBranch string) (string, error)
+	SafeMerge(source string, target string) (string, error)
+	
+	// Conflict management
+	ConflictStatus() (string, error)
+	ResolveConflicts(strategy string) (string, error)
+	
+	// Validation operations
+	ValidateCleanState() (bool, error)
+	DetectPotentialConflicts(sourceBranch string, targetBranch string) (string, error)
+	CreateBackup(name string) (string, error)
 }
 
 // GitHubOperations define la interfaz para las operaciones de GitHub.

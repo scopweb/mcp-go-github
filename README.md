@@ -2,7 +2,7 @@
 
 Go-based MCP server that connects GitHub to Claude Desktop, enabling direct repository operations from Claude's interface.
 
-**🎯 Latest Update:** Updated to `go-github v74.0.0` for enhanced stability and compatibility.
+**🎯 Latest Update:** Enhanced with 13 advanced Git operations including remote checkout, merge strategies, and conflict resolution.
 
 ## ✨ Nuevas Características
 
@@ -11,6 +11,15 @@ Go-based MCP server that connects GitHub to Claude Desktop, enabling direct repo
 - **Configuración diferenciada** por perfil
 - **Logs informativos** con identificación de perfil
 - **Gestión simplificada** de tokens
+
+### 🚀 **Operaciones Git Avanzadas** 
+- **13 nuevas herramientas Git** que solucionan limitaciones críticas
+- **Checkout remoto** con tracking automático (`git_checkout_remote`)
+- **Merge con seguridad** y detección de conflictos (`git_merge`, `git_safe_merge`)
+- **Pull avanzado** con estrategias (merge/rebase/ff-only)
+- **Resolución automática** de conflictos con múltiples estrategias
+- **Backups automáticos** antes de operaciones destructivas
+- **Validaciones previas** para operaciones críticas
 
 ## 📋 Permisos Necesarios del Token
 
@@ -105,21 +114,46 @@ go test ./internal/hybrid/ -v
 }
 ```
 
-## 🧪 Herramientas Disponibles (Todas Testeadas ✅)
+## 🧪 Herramientas Disponibles (25+ Tools ✅)
 
+### 📋 **GitHub API Tools**
 | Función | Estado | Descripción |
 |---------|---------|-------------|
-| **🔍 Git Local & GitHub API** | ✅ **Híbrido** | Detecta Git local automáticamente |
 | **📋 github_list_repos** | ✅ **Testeado** | Lista repositorios del usuario |
 | **🆕 github_create_repo** | ✅ **Testeado** | Crea nuevo repositorio |
-| **📊 github_get_repo** | ✅ **Testeado** | Obtiene información de repositorio |
-| **🌿 github_list_branches** | ✅ **Testeado** | Lista ramas de un repositorio |
 | **🔄 github_list_prs** | ✅ **Testeado** | Lista pull requests |
 | **✨ github_create_pr** | ✅ **Testeado** | Crea nuevo pull request |
 | **🐛 github_list_issues** | ✅ **Testeado** | Lista issues de un repositorio |
 | **📝 github_create_issue** | ✅ **Testeado** | Crea nuevo issue |
+
+### 🔧 **Git Local Tools**  
+| Función | Estado | Descripción |
+|---------|---------|-------------|
 | **🔧 git_status** | ✅ **Local** | Estado del repositorio Git local |
 | **📁 git_list_files** | ✅ **Local** | Lista archivos en el repositorio |
+| **🌿 git_branch_list** | ✅ **Local** | Lista ramas locales/remotas |
+| **📊 git_log_analysis** | ✅ **Local** | Análisis de historial de commits |
+
+### 🚀 **Advanced Git Operations** (NEW!)
+| Función | Estado | Descripción |
+|---------|---------|-------------|
+| **🚀 git_checkout_remote** | ✅ **Nuevo** | Checkout remoto con tracking |
+| **🔀 git_merge** | ✅ **Nuevo** | Merge con validaciones |
+| **⚡ git_rebase** | ✅ **Nuevo** | Rebase seguro |
+| **⬇️ git_pull_with_strategy** | ✅ **Nuevo** | Pull con estrategias específicas |
+| **⬆️ git_force_push** | ✅ **Nuevo** | Force push con backup |
+| **⬆️ git_push_upstream** | ✅ **Nuevo** | Push con upstream tracking |
+| **🔄 git_sync_with_remote** | ✅ **Nuevo** | Sincronización automática |
+| **🛡️ git_safe_merge** | ✅ **Nuevo** | Merge con backup y rollback |
+| **⚠️ git_conflict_status** | ✅ **Nuevo** | Estado de conflictos detallado |
+| **🔧 git_resolve_conflicts** | ✅ **Nuevo** | Resolución automática |
+| **✅ git_validate_clean_state** | ✅ **Nuevo** | Validación de estado limpio |
+| **🔍 git_detect_conflicts** | ✅ **Nuevo** | Detección preventiva |
+| **💾 git_create_backup** | ✅ **Nuevo** | Backups automáticos |
+
+### 🔄 **Hybrid Tools**
+| Función | Estado | Descripción |
+|---------|---------|-------------|
 | **📄 create_file** | ✅ **Híbrido** | Crea archivos (Git local primero) |
 | **✏️ update_file** | ✅ **Híbrido** | Actualiza archivos (Git local primero) |
 
@@ -177,7 +211,7 @@ Con estos cambios, el MCP es ahora mucho más seguro. ¡Un saludo, amigo!
 - ✅ **Gestión de permisos**: Documentada y verificada
 - ✅ **Testing completo**: Todas las funciones probadas con tests unitarios
 - ✅ **Dependencias actualizadas**: go-github v74.0.0 (latest stable)
-- ✅ **Listo para producción**: Stable release v2.1
+- ✅ **Listo para producción**: Enhanced release v2.2 with advanced Git operations
 
 ## 🔧 Requisitos del Sistema
 
