@@ -8,7 +8,9 @@
       "Bash(./github-mcp-modular.exe)",
       "Bash(.github-mcp-modular.exe)",
       "Read(//c/Users/DAVID/AppData/Roaming/Claude/**)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
