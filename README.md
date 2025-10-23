@@ -63,6 +63,35 @@ Edita `~/.claude/claude_desktop_config.json`:
 - `github_list_prs` - Listar pull requests
 - `github_create_pr` - Crear pull request
 
+## Ventajas del Sistema
+
+- ✅ **Un solo ejecutable** para mantener
+- ✅ **Múltiples cuentas GitHub** simultáneas
+- ✅ **Operaciones Git locales** sin consumir tokens
+- ✅ **Backups automáticos** en operaciones críticas
+- ✅ **Detección de conflictos** preventiva
+
+## Solución de Problemas
+
+### Error 403 "Resource not accessible by personal access token"
+- Tu token no tiene permisos suficientes
+- Genera nuevo token con scope `repo`
+- Reinicia Claude Desktop después del cambio
+
+### Logs del servidor
+Verifica los logs para confirmar que arranca correctamente:
+```
+Starting MCP server with profile: personal
+```
+
+## Estado del Proyecto
+
+- ✅ **Protocolo JSON-RPC 2.0**: Implementado y funcionando
+- ✅ **Operaciones Git locales**: Todas las funciones implementadas
+- ✅ **GitHub API**: Repositorios, PRs e issues
+- ✅ **Modo híbrido**: Git local + GitHub API
+- ✅ **Listo para producción**
+
 ## Documentación
 
 Ver [CLAUDE.md](CLAUDE.md) para detalles de arquitectura y desarrollo.
