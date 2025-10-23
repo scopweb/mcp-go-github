@@ -8,6 +8,7 @@
 # Build output
 /github-mcp-modular.exe
 /github-mcp.exe
+github-mcp-modular.exe~
 
 # Go specific
 vendor/
