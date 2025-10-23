@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/go-github/v74/github"
-	"github.com/scopweb/mcp-go-github/internal/interfaces"
+	"github.com/jotajotape/github-go-server-mcp/internal/interfaces"
 )
 
 // RepositoriesService define la interfaz para interactuar con la API de repositorios de GitHub.

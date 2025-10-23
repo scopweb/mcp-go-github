@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v74/github"
-	"github.com/scopweb/mcp-go-github/internal/types"
+	"github.com/jotajotape/github-go-server-mcp/internal/types"
 	"github.com/stretchr/testify/assert"
 )
 

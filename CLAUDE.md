@@ -2,9 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
-
-Repository: **github.com/scopweb/mcp-go-github**
+## Project Architecture
 
 This is a **Go-based MCP (Model Context Protocol) server** that provides GitHub integration for Claude Desktop. The architecture follows a modular design with hybrid operation support (local Git + GitHub API).
 
@@ -23,6 +21,8 @@ This is a **Go-based MCP (Model Context Protocol) server** that provides GitHub 
 - **Hybrid operations**: Prioritizes local Git commands to minimize API token usage
 - **MCP protocol compliance**: Implements JSON-RPC 2.0 for Claude Desktop integration
 - **Smart Git detection**: Automatically detects Git environment and repository state
+- **Advanced Git operations**: 13 new operations including remote checkout, merge strategies, conflict resolution
+- **Safety features**: Automatic backups, clean state validation, conflict detection
 
 ## Development Commands
 
@@ -37,28 +37,13 @@ go build -o github-mcp-modular.exe main.go
 ```
 
 ### Testing
-```bash
-# Run all tests
-go test ./...
-
-# Run tests with verbose output
-go test ./... -v
-
-# Run tests for specific module
-go test ./internal/hybrid/ -v
-```
-
-Comprehensive test coverage includes:
-- Unit tests for all core components
-- Hybrid operations testing
-- Git environment detection
-- GitHub API integration tests
+- No automated test suite is currently implemented
+- Manual testing through Claude Desktop integration required
 
 ### Dependencies
 - Go 1.23.0+
-- `github.com/google/go-github/v74` v74.0.0 - GitHub API client (latest stable)
+- `github.com/google/go-github/v66` - GitHub API client
 - `golang.org/x/oauth2` - OAuth2 authentication
-- `github.com/stretchr/testify` - Testing framework
 
 ## Configuration Requirements
 
@@ -95,13 +80,15 @@ The server supports both single-token and multi-profile configurations:
 
 ## Available MCP Tools
 
-The server provides 15+ fully tested tools organized into categories:
-- **Repository operations**: list_repos, create_repo, get_repo ✅
-- **Branch management**: list_branches ✅
-- **Pull requests**: list_prs, create_pr ✅ 
-- **Issues**: list_issues, create_issue ✅
-- **Local Git**: git_status, git_list_files ✅
-- **File operations**: create_file, update_file (hybrid mode) ✅
+The server provides 25+ tools organized into categories:
+- **Repository operations**: list_repos, create_repo, get_repo
+- **Branch management**: list_branches, checkout_remote, merge, rebase
+- **Pull requests**: list_prs, create_pr
+- **Issues**: list_issues, create_issue
+- **Local Git**: git_status, git_list_files, pull_with_strategy, force_push, push_upstream
+- **File operations**: create_file, update_file (hybrid mode)
+- **Advanced Git**: sync_with_remote, safe_merge, conflict_status, resolve_conflicts
+- **Safety tools**: validate_clean_state, detect_conflicts, create_backup
 
 ## Development Notes
 
@@ -118,16 +105,5 @@ The system implements a "smart" approach:
 
 ### Error Handling
 - Comprehensive JSON-RPC 2.0 error responses
-- Token permission validation with helpful error messages  
+- Token permission validation with helpful error messages
 - Git environment detection with graceful fallbacks
-
-### Security Enhancements
-- **Argument injection prevention**: Neutralizes potential command injection attacks
-- **Path traversal protection**: Validates file paths to prevent unauthorized access
-- **Input validation**: Strict validation of all user inputs before processing
-
-### Project Status
-- ✅ **Production ready**: Stable release v2.1
-- ✅ **Full test coverage**: All functions tested with unit tests
-- ✅ **Latest dependencies**: go-github v74.0.0
-- ✅ **Security hardened**: Enhanced with injection prevention

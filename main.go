@@ -9,88 +9,90 @@ import (
 	"log"
 	"os"
 
-	"github.com/google/go-github/v74/github"
+	ghclient "github.com/google/go-github/v74/github"
 	"golang.org/x/oauth2"
 
-	"github.com/scopweb/mcp-go-github/internal/git"
-	githubclient "github.com/scopweb/mcp-go-github/internal/github"
-	"github.com/scopweb/mcp-go-github/internal/server"
-	"github.com/scopweb/mcp-go-github/internal/types"
+	"github.com/jotajotape/github-go-server-mcp/internal/github"
+	"github.com/jotajotape/github-go-server-mcp/internal/git"
+	"github.com/jotajotape/github-go-server-mcp/internal/server"
+	"github.com/jotajotape/github-go-server-mcp/internal/types"
 )
 
 func main() {
-	// Configuración de perfiles
-	profile := flag.String("profile", "default", "Profile name for this MCP instance")
+	// Procesar argumentos de línea de comandos
+	profile := flag.String("profile", "", "Profile name (optional)")
 	flag.Parse()
 
-	log.Printf("🚀 Starting GitHub MCP Server with profile: %s", *profile)
-
-	mcpServer, err := NewMCPServer(*profile)
-	if err != nil {
-		log.Fatal(err)
+	if *profile != "" {
+		log.Printf("Starting MCP server with profile: %s", *profile)
 	}
 
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue
-		}
-
-		var req types.JSONRPCRequest
-		if err := json.Unmarshal([]byte(line), &req); err != nil {
-			continue
-		}
-
-		// Usar el handler del paquete server
-		resp := server.HandleRequest(mcpServer, req)
-		output, err := json.Marshal(resp)
-		if err != nil {
-			continue
-		}
-
-		fmt.Println(string(output))
-	}
-}
-
-func NewMCPServer(profile string) (*server.MCPServer, error) {
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		return nil, fmt.Errorf("GITHUB_TOKEN required for profile: %s", profile)
-	}
-
-	// Log del perfil y token (solo primeros 7 caracteres por seguridad)
-	tokenPreview := "***"
-	if len(token) >= 7 {
-		tokenPreview = token[:7] + "***"
-	}
-	log.Printf("📋 Profile: %s | Token: %s", profile, tokenPreview)
-
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(context.Background(), ts)
-	ghClient := github.NewClient(tc)
-
-	// Crear cliente Git
+	// Inicializar cliente Git
 	gitClient, err := git.NewClient()
 	if err != nil {
-		return nil, fmt.Errorf("error creating git client: %w", err)
+		log.Printf("Warning: Failed to initialize Git client: %v", err)
 	}
 
-	// Log del estado de Git
-	if gitClient.HasGit() && gitClient.IsGitRepo() {
-		log.Printf("🔧 Git local detected for profile: %s", profile)
-	} else if gitClient.HasGit() {
-		log.Printf("⚠️ Git available but not in repo for profile: %s", profile)
+	// Inicializar cliente GitHub con OAuth2
+	token := os.Getenv("GITHUB_TOKEN")
+	var githubClient ghclient.Client
+
+	if token != "" {
+		ctx := context.Background()
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		githubClient = *ghclient.NewClient(tc)
 	} else {
-		log.Printf("📡 Git not available, API-only mode for profile: %s", profile)
+		githubClient = *ghclient.NewClient(nil)
 	}
 
-	// Crear cliente GitHub
-	githubClient := githubclient.NewClient(ghClient)
-	log.Printf("🔧 GitHub client initialized for profile: %s", profile)
+	// Crear wrapper del cliente GitHub
+	wrappedGithubClient := github.NewClient(&githubClient)
 
-	return &server.MCPServer{
-		GithubClient: githubClient,
+	// Crear servidor MCP
+	mcpServer := &server.MCPServer{
+		GithubClient: wrappedGithubClient,
 		GitClient:    gitClient,
-	}, nil
+	}
+
+	// Leer solicitudes JSON-RPC del stdin
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+
+		// Parsear solicitud JSON-RPC
+		var req types.JSONRPCRequest
+		if err := json.Unmarshal(line, &req); err != nil {
+			// Enviar error de JSON inválido
+			errResp := types.JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      nil,
+				Error: &types.JSONRPCError{
+					Code:    -32700,
+					Message: "Parse error",
+				},
+			}
+			respBytes, _ := json.Marshal(errResp)
+			fmt.Println(string(respBytes))
+			continue
+		}
+
+		// Procesar solicitud
+		response := server.HandleRequest(mcpServer, req)
+
+		// Enviar respuesta JSON-RPC
+		respBytes, err := json.Marshal(response)
+		if err != nil {
+			log.Printf("Error marshaling response: %v", err)
+			continue
+		}
+
+		fmt.Println(string(respBytes))
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Scanner error: %v", err)
+	}
 }
