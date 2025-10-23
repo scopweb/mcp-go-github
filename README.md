@@ -176,12 +176,14 @@ Con estos cambios, el MCP es ahora mucho más seguro. ¡Un saludo, amigo!
 - ✅ **Soporte multi-perfil**: Implementado y testeado
 - ✅ **Gestión de permisos**: Documentada y verificada
 - ✅ **Testing completo**: Todas las funciones probadas con tests unitarios
-- ✅ **Dependencias actualizadas**: go-github v74.0.0 (latest stable)
-- ✅ **Listo para producción**: Stable release v2.1
+- ✅ **Dependencias actualizadas**: go-github v74.0.0, oauth2 v0.32.0 (latest stable)
+- ✅ **Listo para producción**: Stable release v2.2.1
+
+📋 **Changelog**: Ver [CHANGELOG.md](CHANGELOG.md) para historial completo de cambios
 
 ## 🔧 Requisitos del Sistema
 
-- **Go**: 1.19 o superior
+- **Go**: 1.24.0 o superior (actualizado)
 - **Git**: Para operaciones locales (opcional pero recomendado)
 - **Windows**: PowerShell para scripts de compilación
 - **GitHub Token**: Con permisos `repo` mínimos
