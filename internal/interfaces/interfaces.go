@@ -59,6 +59,13 @@ type GitOperations interface {
 	ValidateCleanState() (bool, error)
 	DetectPotentialConflicts(sourceBranch string, targetBranch string) (string, error)
 	CreateBackup(name string) (string, error)
+
+	// Phase 1: Essential commands (Fase 1)
+	Reset(mode string, target string, files []string) (string, error)
+
+	// Phase 2: Conflict management (Fase 2)
+	ShowConflict(filePath string) (string, error)
+	ResolveFile(filePath string, strategy string, customContent *string) (string, error)
 }
 
 // GitHubOperations define la interfaz para las operaciones de GitHub.

@@ -1,29 +1,21 @@
-# Archivos de compilación
+# Binaries
 *.exe
 *.dll
 *.so
 *.dylib
-
-# Archivos de test
 *.test
 
-# Output de go build
-/github-mcp
-/github-mcp.exe
-/github-mcp-test.exe
-/github-go-server-mcp.exe
+# Build output
 /github-mcp-modular.exe
+/github-mcp.exe
 
 # Go specific
 vendor/
-*.sum.backup
+go.sum
 
-# Archivos de entorno
+# Environment variables
 .env
 .env.local
-
-# Logs
-*.log
 
 # IDE
 .vscode/
@@ -31,19 +23,18 @@ vendor/
 *.swp
 *.swo
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
 # Temporary files
 *.tmp
-*.temp
-
-# Backup files
+*.log
 *.bak
-*.backup
 
-# Development documentation
+# Development docs (not needed in repo)
 CONVERSATION.md
-CLAUDE.md
 *.prompt.md
+
+# Test artifacts
+test_mcp.go

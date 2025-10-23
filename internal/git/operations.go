@@ -246,8 +246,44 @@ func (c *Client) Pull(branch string) (string, error) {
 		effectiveBranch = c.Config.CurrentBranch
 	}
 
-	cmd := c.executor.Command("git", "pull", "origin", "--", effectiveBranch)
+	// Paso 1: Fetch para tener info actualizada del remoto
+	fetchCmd := c.executor.Command("git", "fetch", "origin", effectiveBranch)
+	if output, err := fetchCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("error en fetch inicial: %v, Output: %s", err, output)
+	}
 
+	// Paso 2: Detectar divergencias
+	divergenceInfo, err := c.checkDivergence(effectiveBranch)
+	if err != nil {
+		return "", fmt.Errorf("error detectando divergencias: %v", err)
+	}
+
+	// Paso 3: Si no hay divergencias, hacer fast-forward
+	if divergenceInfo["canFastForward"].(bool) {
+		cmd := c.executor.Command("git", "pull", "--ff-only", "origin", effectiveBranch)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return "", fmt.Errorf("error en pull (ff-only): %v, Output: %s", err, output)
+		}
+		return fmt.Sprintf("Pull exitoso (fast-forward) desde rama: %s", effectiveBranch), nil
+	}
+
+	// Paso 4: Si hay divergencias, intentar merge regular
+	if divergenceInfo["aheadCount"].(int) > 0 && divergenceInfo["behindCount"].(int) > 0 {
+		// Divergencia: usar merge strategy
+		cmd := c.executor.Command("git", "pull", "--no-rebase", "origin", effectiveBranch)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			if strings.Contains(string(output), "CONFLICT") {
+				return "", fmt.Errorf("conflictos detectados durante pull. Divergencia: %d commits locales, %d commits remotos. Resuelve manualmente o usa PullWithStrategy con 'rebase'", divergenceInfo["aheadCount"].(int), divergenceInfo["behindCount"].(int))
+			}
+			return "", fmt.Errorf("error en pull: %v, Output: %s", err, output)
+		}
+		return fmt.Sprintf("Pull exitoso (merge) desde rama: %s. Divergencia resuelta: %d commits locales + %d commits remotos", effectiveBranch, divergenceInfo["aheadCount"].(int), divergenceInfo["behindCount"].(int)), nil
+	}
+
+	// Solo cambios remotos
+	cmd := c.executor.Command("git", "pull", "origin", effectiveBranch)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("error ejecutando git pull: %v, Output: %s", err, output)
@@ -256,29 +292,107 @@ func (c *Client) Pull(branch string) (string, error) {
 	return fmt.Sprintf("Pull realizado desde rama: %s", effectiveBranch), nil
 }
 
+// checkDivergence detecta si hay divergencias entre rama local y remota
+func (c *Client) checkDivergence(branch string) (map[string]interface{}, error) {
+	result := map[string]interface{}{
+		"canFastForward": false,
+		"aheadCount":     0,
+		"behindCount":    0,
+		"isDiverged":     false,
+	}
+
+	// Contar commits adelante y atrás
+	countCmd := c.executor.Command("git", "rev-list", "--left-right", "--count", fmt.Sprintf("HEAD...origin/%s", branch))
+	output, err := countCmd.Output()
+	if err != nil {
+		return result, fmt.Errorf("error contando divergencias: %v", err)
+	}
+
+	parts := strings.Fields(strings.TrimSpace(string(output)))
+	if len(parts) >= 2 {
+		aheadCount := 0
+		behindCount := 0
+		fmt.Sscanf(parts[0], "%d", &aheadCount)
+		fmt.Sscanf(parts[1], "%d", &behindCount)
+
+		result["aheadCount"] = aheadCount
+		result["behindCount"] = behindCount
+		result["isDiverged"] = aheadCount > 0 && behindCount > 0
+		result["canFastForward"] = aheadCount == 0 && behindCount > 0
+	}
+
+	return result, nil
+}
+
 func (c *Client) Checkout(branch string, create bool) (string, error) {
 	if !c.Config.HasGit || !c.Config.IsGitRepo {
 		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	if branch == "" {
+		return "", fmt.Errorf("nombre de rama requerido")
 	}
 
 	originalDir, _ := os.Getwd()
 	defer os.Chdir(originalDir)
 	os.Chdir(c.Config.RepoPath)
 
+	// Paso 1: Validar que la rama existe (si no es creación de rama nueva)
+	if !create {
+		checkCmd := c.executor.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+		if _, err := checkCmd.CombinedOutput(); err != nil {
+			// Intentar desde remoto
+			checkRemoteCmd := c.executor.Command("git", "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+branch)
+			if _, err := checkRemoteCmd.CombinedOutput(); err != nil {
+				return "", fmt.Errorf("rama '%s' no existe (ni local ni remota). Crea con 'create: true' o usa 'CheckoutRemote'", branch)
+			}
+		}
+	}
+
+	// Paso 2: Validar estado del working directory
+	clean, err := c.ValidateCleanState()
+	if err != nil {
+		return "", fmt.Errorf("error validando estado: %v", err)
+	}
+
+	// Paso 3: Si hay cambios sin commitear, hacer stash automático
+	stashApplied := false
+	stashName := ""
+	if !clean {
+		stashName = fmt.Sprintf("auto-stash-before-checkout-%s", branch)
+		if _, err := c.Stash("push", stashName); err != nil {
+			return "", fmt.Errorf("error guardando cambios con stash: %v. Debes commitear o descartar los cambios primero", err)
+		}
+		stashApplied = true
+	}
+
+	// Paso 4: Ejecutar checkout
 	var cmd cmdWrapper
 	if create {
-		cmd = c.executor.Command("git", "checkout", "-b", "--", branch)
+		cmd = c.executor.Command("git", "checkout", "-b", branch)
 	} else {
-		cmd = c.executor.Command("git", "checkout", "--", branch)
+		cmd = c.executor.Command("git", "checkout", branch)
 	}
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		// Si falló, restaurar stash si fue aplicado
+		if stashApplied {
+			c.Stash("pop", stashName)
+		}
 		return "", fmt.Errorf("error ejecutando git checkout: %v, Output: %s", err, output)
 	}
 
 	c.Config.CurrentBranch = branch
-	return fmt.Sprintf("Checkout a rama: %s (crear: %v)", branch, create), nil
+
+	result := fmt.Sprintf("Checkout exitoso a rama: %s", branch)
+	if create {
+		result += " (nueva rama creada)"
+	}
+	if stashApplied {
+		result += fmt.Sprintf(" [cambios guardados en stash: %s]", stashName)
+	}
+	return result, nil
 }
 
 func (c *Client) CreateFile(path, content string) (string, error) {
@@ -1403,47 +1517,57 @@ func (c *Client) ResolveConflicts(strategy string) (string, error) {
 	defer os.Chdir(originalDir)
 	os.Chdir(c.Config.RepoPath)
 
+	// Paso 1: Obtener lista de archivos en conflicto
+	conflictedFiles, err := c.getConflictedFiles()
+	if err != nil {
+		return "", fmt.Errorf("error obteniendo archivos en conflicto: %v", err)
+	}
+
+	if len(conflictedFiles) == 0 {
+		return "No hay conflictos para resolver", nil
+	}
+
 	var cmd cmdWrapper
 	var result string
 
 	switch strategy {
 	case "theirs":
-		// Accept their version for all conflicts
+		// Aceptar versión remota para todos los conflictos
 		cmd = c.executor.Command("git", "checkout", "--theirs", ".")
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return "", fmt.Errorf("error aceptando cambios remotos: %v, Output: %s", err, output)
 		}
-		
-		// Add resolved files
+
+		// Agregar archivos resueltos
 		addCmd := c.executor.Command("git", "add", ".")
 		if output, err := addCmd.CombinedOutput(); err != nil {
 			return "", fmt.Errorf("error agregando archivos resueltos: %v, Output: %s", err, output)
 		}
-		
-		result = "Conflictos resueltos aceptando versión remota (theirs)"
-		
+
+		result = fmt.Sprintf("Conflictos resueltos en %d archivo(s) aceptando versión remota (theirs)", len(conflictedFiles))
+
 	case "ours":
-		// Accept our version for all conflicts
+		// Aceptar versión local para todos los conflictos
 		cmd = c.executor.Command("git", "checkout", "--ours", ".")
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return "", fmt.Errorf("error aceptando cambios locales: %v, Output: %s", err, output)
 		}
-		
-		// Add resolved files
+
+		// Agregar archivos resueltos
 		addCmd := c.executor.Command("git", "add", ".")
 		if output, err := addCmd.CombinedOutput(); err != nil {
 			return "", fmt.Errorf("error agregando archivos resueltos: %v, Output: %s", err, output)
 		}
-		
-		result = "Conflictos resueltos aceptando versión local (ours)"
-		
+
+		result = fmt.Sprintf("Conflictos resueltos en %d archivo(s) aceptando versión local (ours)", len(conflictedFiles))
+
 	case "abort":
-		// Check if in merge state
+		// Abortar merge o rebase
 		mergeHeadPath := filepath.Join(c.Config.RepoPath, ".git", "MERGE_HEAD")
 		if _, err := os.Stat(mergeHeadPath); err == nil {
 			cmd = c.executor.Command("git", "merge", "--abort")
 		} else {
-			// Check if in rebase state
+			// Verificar si hay rebase activo
 			rebaseDirPath := filepath.Join(c.Config.RepoPath, ".git", "rebase-merge")
 			rebaseApplyPath := filepath.Join(c.Config.RepoPath, ".git", "rebase-apply")
 			_, rebaseDirErr := os.Stat(rebaseDirPath)
@@ -1454,26 +1578,53 @@ func (c *Client) ResolveConflicts(strategy string) (string, error) {
 				return "", fmt.Errorf("no hay operación de merge o rebase activa para abortar")
 			}
 		}
-		
+
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return "", fmt.Errorf("error abortando operación: %v, Output: %s", err, output)
 		}
-		
+
 		result = "Operación abortada, repositorio restaurado"
-		
+
 	case "manual":
-		// Just report conflicted files for manual resolution
-		statusResult, err := c.ConflictStatus()
-		if err != nil {
-			return "", fmt.Errorf("error obteniendo status de conflictos: %v", err)
+		// Mostrar información detallada de archivos en conflicto
+		var details []string
+		details = append(details, fmt.Sprintf("Archivos en conflicto (%d):", len(conflictedFiles)))
+		for i, file := range conflictedFiles {
+			details = append(details, fmt.Sprintf("  %d. %s", i+1, file))
 		}
-		result = fmt.Sprintf("Resolución manual requerida. Status: %s", statusResult)
-		
+		details = append(details, "")
+		details = append(details, "Usa ResolveFile para resolver archivo por archivo")
+		details = append(details, "Ejemplo: ResolveFile('file.txt', 'ours')")
+		result = strings.Join(details, "\n")
+
 	default:
 		return "", fmt.Errorf("estrategia no válida: %s. Usa: theirs, ours, abort, manual", strategy)
 	}
 
 	return result, nil
+}
+
+// getConflictedFiles obtiene la lista de archivos en conflicto
+func (c *Client) getConflictedFiles() ([]string, error) {
+	statusCmd := c.executor.Command("git", "status", "--porcelain")
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("error obteniendo status: %v", err)
+	}
+
+	var conflictedFiles []string
+	lines := strings.Split(string(statusOutput), "\n")
+	for _, line := range lines {
+		if len(line) > 2 {
+			// Archivos en conflicto tienen estado "UU", "AA", "DD", "AU", "UA", etc.
+			status := line[:2]
+			if (status[0] == 'U' || status[0] == 'A' || status[0] == 'D') &&
+				(status[1] == 'U' || status[1] == 'A' || status[1] == 'D') {
+				conflictedFiles = append(conflictedFiles, strings.TrimSpace(line[2:]))
+			}
+		}
+	}
+	return conflictedFiles, nil
 }
 
 // Validation operations
@@ -1560,7 +1711,7 @@ func (c *Client) CreateBackup(name string) (string, error) {
 
 	// Create tag as backup
 	tagName := fmt.Sprintf("backup/%s", name)
-	
+
 	// Get current commit
 	commitCmd := c.executor.Command("git", "rev-parse", "HEAD")
 	commitHash, err := commitCmd.Output()
@@ -1576,4 +1727,254 @@ func (c *Client) CreateBackup(name string) (string, error) {
 	}
 
 	return fmt.Sprintf("Backup creado: %s en commit %s", tagName, strings.TrimSpace(string(commitHash))[:8]), nil
+}
+
+// Helper types para manejo de conflictos
+type ConflictMarker struct {
+	Ours   string `json:"ours"`
+	Theirs string `json:"theirs"`
+	Base   string `json:"base,omitempty"`
+}
+
+type ConflictDetails struct {
+	File      string            `json:"file"`
+	HasBase   bool              `json:"hasBase"`
+	Markers   []ConflictMarker  `json:"markers"`
+	Content   string            `json:"content,omitempty"`
+	Suggestion string           `json:"suggestion"`
+}
+
+// FASE 1: Nuevos comandos esenciales
+
+// Reset realiza un reset a un commit especificado con el modo indicado (hard, soft, mixed)
+func (c *Client) Reset(mode string, target string, files []string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	// Validar modo
+	validModes := map[string]bool{"hard": true, "soft": true, "mixed": true}
+	if !validModes[mode] {
+		return "", fmt.Errorf("modo inválido: %s. Usa: hard, soft, mixed", mode)
+	}
+
+	// Validar que no sea reset hard con cambios pendientes (advertencia de seguridad)
+	if mode == "hard" {
+		clean, err := c.ValidateCleanState()
+		if err != nil {
+			return "", fmt.Errorf("error validando estado: %v", err)
+		}
+		if !clean {
+			// Crear backup automático antes de reset hard
+			if _, err := c.CreateBackup(fmt.Sprintf("before-reset-hard-%s", target)); err != nil {
+				return "", fmt.Errorf("error creando backup de seguridad: %v", err)
+			}
+		}
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Validar que el target existe
+	validateCmd := c.executor.Command("git", "rev-parse", target)
+	if _, err := validateCmd.Output(); err != nil {
+		return "", fmt.Errorf("target inválido '%s': %v", target, err)
+	}
+
+	var cmd cmdWrapper
+
+	// Reset parcial (archivos específicos)
+	if len(files) > 0 {
+		args := []string{"reset"}
+		if mode != "mixed" { // mixed es el modo default, no necesita especificarse
+			args = append(args, "--"+mode)
+		}
+		args = append(args, target)
+		args = append(args, files...)
+		cmd = c.executor.Command("git", args...)
+	} else {
+		// Reset completo
+		cmd = c.executor.Command("git", "reset", "--"+mode, target)
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("error ejecutando git reset: %v, Output: %s", err, output)
+	}
+
+	if len(files) > 0 {
+		return fmt.Sprintf("Reset parcial exitoso (modo %s) en %d archivo(s) a commit %s", mode, len(files), target), nil
+	}
+	return fmt.Sprintf("Reset exitoso (modo %s) a commit %s", mode, target), nil
+}
+
+// FASE 2: Gestión de Conflictos
+
+// ShowConflict muestra los detalles de un conflicto en un archivo específico
+func (c *Client) ShowConflict(filePath string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Leer contenido del archivo
+	fullPath := filepath.Join(c.Config.RepoPath, filePath)
+	content, err := os.ReadFile(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("error leyendo archivo '%s': %v", filePath, err)
+	}
+
+	contentStr := string(content)
+
+	// Parsear markers de conflicto
+	details := c.parseConflictMarkers(filePath, contentStr)
+
+	// Convertir a JSON
+	output, _ := json.MarshalIndent(details, "", "  ")
+	return string(output), nil
+}
+
+// parseConflictMarkers parsea los markers de conflicto en un archivo
+func (c *Client) parseConflictMarkers(filePath string, content string) ConflictDetails {
+	details := ConflictDetails{
+		File:      filePath,
+		Content:   content,
+		Suggestion: "Resuelve manualmente o usa ResolveFile con estrategia 'ours' o 'theirs'",
+	}
+
+	lines := strings.Split(content, "\n")
+	var currentMarker ConflictMarker
+	inOurs := false
+	inBase := false
+	inTheirs := false
+	hasConflict := false
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "<<<<<<<") {
+			// Inicio de conflicto
+			hasConflict = true
+			inOurs = true
+			inBase = false
+			inTheirs = false
+			if currentMarker.Ours != "" || currentMarker.Theirs != "" {
+				// Nuevo conflicto encontrado
+				details.Markers = append(details.Markers, currentMarker)
+				currentMarker = ConflictMarker{}
+			}
+		} else if strings.HasPrefix(line, "=======") {
+			// Separador entre ours y theirs (o base y theirs)
+			if inOurs {
+				inOurs = false
+				inTheirs = true
+			} else if inBase {
+				inBase = false
+				inTheirs = true
+			}
+		} else if strings.HasPrefix(line, "||||||| ") {
+			// Separador de base (merge 3-way)
+			inOurs = false
+			inBase = true
+			details.HasBase = true
+		} else if strings.HasPrefix(line, ">>>>>>>") {
+			// Fin de conflicto
+			inTheirs = false
+			inOurs = false
+			inBase = false
+		} else {
+			// Acumular contenido
+			if inOurs {
+				if currentMarker.Ours != "" {
+					currentMarker.Ours += "\n"
+				}
+				currentMarker.Ours += line
+			} else if inBase {
+				if currentMarker.Base != "" {
+					currentMarker.Base += "\n"
+				}
+				currentMarker.Base += line
+			} else if inTheirs {
+				if currentMarker.Theirs != "" {
+					currentMarker.Theirs += "\n"
+				}
+				currentMarker.Theirs += line
+			}
+		}
+	}
+
+	// Agregar último marker si existe
+	if hasConflict && (currentMarker.Ours != "" || currentMarker.Theirs != "") {
+		details.Markers = append(details.Markers, currentMarker)
+	}
+
+	return details
+}
+
+// ResolveFile resuelve un archivo específico en conflicto
+func (c *Client) ResolveFile(filePath string, strategy string, customContent *string) (string, error) {
+	if !c.Config.HasGit || !c.Config.IsGitRepo {
+		return "", fmt.Errorf("git no disponible o no es un repositorio Git")
+	}
+
+	// Validar estrategia
+	validStrategies := map[string]bool{"ours": true, "theirs": true, "manual": true}
+	if !validStrategies[strategy] {
+		return "", fmt.Errorf("estrategia inválida: %s. Usa: ours, theirs, manual", strategy)
+	}
+
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	os.Chdir(c.Config.RepoPath)
+
+	// Validar que el archivo existe
+	fullPath := filepath.Join(c.Config.RepoPath, filePath)
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("archivo no encontrado: %s", filePath)
+	}
+
+	var cmd cmdWrapper
+	var result string
+
+	switch strategy {
+	case "ours":
+		// Aceptar nuestra versión
+		cmd = c.executor.Command("git", "checkout", "--ours", filePath)
+		result = "Archivo resuelto aceptando nuestra versión (ours)"
+
+	case "theirs":
+		// Aceptar su versión
+		cmd = c.executor.Command("git", "checkout", "--theirs", filePath)
+		result = "Archivo resuelto aceptando su versión (theirs)"
+
+	case "manual":
+		// Usar contenido personalizado
+		if customContent == nil {
+			return "", fmt.Errorf("contenido personalizado requerido para estrategia 'manual'")
+		}
+
+		// Escribir contenido personalizado
+		if err := os.WriteFile(fullPath, []byte(*customContent), 0644); err != nil {
+			return "", fmt.Errorf("error escribiendo contenido personalizado: %v", err)
+		}
+		result = "Archivo resuelto con contenido personalizado"
+	}
+
+	// Ejecutar comando si no es manual
+	if strategy != "manual" {
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return "", fmt.Errorf("error resolviendo archivo: %v, Output: %s", err, output)
+		}
+	}
+
+	// Agregar archivo resuelto al staging
+	addCmd := c.executor.Command("git", "add", filePath)
+	if output, err := addCmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("error agregando archivo: %v, Output: %s", err, output)
+	}
+
+	return fmt.Sprintf("%s y agregado al staging", result), nil
 }
