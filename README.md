@@ -2,7 +2,7 @@
 
 Go-based MCP server that connects GitHub to Claude Desktop, enabling direct repository operations from Claude's interface.
 
-**🎯 Latest Update:** Updated to `go-github v74.0.0` for enhanced stability and compatibility.
+**🎯 Latest Update:** Updated to `go-github v76.0.0` for enhanced stability and compatibility.
 
 ## ✨ Nuevas Características
 
@@ -105,23 +105,84 @@ go test ./internal/hybrid/ -v
 }
 ```
 
-## 🧪 Herramientas Disponibles (Todas Testeadas ✅)
+## 🧪 Herramientas Disponibles (45+ Herramientas)
 
-| Función | Estado | Descripción |
-|---------|---------|-------------|
-| **🔍 Git Local & GitHub API** | ✅ **Híbrido** | Detecta Git local automáticamente |
-| **📋 github_list_repos** | ✅ **Testeado** | Lista repositorios del usuario |
-| **🆕 github_create_repo** | ✅ **Testeado** | Crea nuevo repositorio |
-| **📊 github_get_repo** | ✅ **Testeado** | Obtiene información de repositorio |
-| **🌿 github_list_branches** | ✅ **Testeado** | Lista ramas de un repositorio |
-| **🔄 github_list_prs** | ✅ **Testeado** | Lista pull requests |
-| **✨ github_create_pr** | ✅ **Testeado** | Crea nuevo pull request |
-| **🐛 github_list_issues** | ✅ **Testeado** | Lista issues de un repositorio |
-| **📝 github_create_issue** | ✅ **Testeado** | Crea nuevo issue |
-| **🔧 git_status** | ✅ **Local** | Estado del repositorio Git local |
-| **📁 git_list_files** | ✅ **Local** | Lista archivos en el repositorio |
-| **📄 create_file** | ✅ **Híbrido** | Crea archivos (Git local primero) |
-| **✏️ update_file** | ✅ **Híbrido** | Actualiza archivos (Git local primero) |
+### 🔍 Herramientas de Información Git
+
+| Herramienta | Descripción | Tokens |
+|-------------|-------------|--------|
+| **git_status** | Estado del repositorio Git local y configuración | 0 |
+| **git_list_files** | Lista todos los archivos en el repositorio | 0 |
+| **git_get_file_content** | Obtiene contenido de un archivo desde Git | 0 |
+| **git_get_file_sha** | Obtiene el SHA de un archivo específico | 0 |
+| **git_get_last_commit** | Obtiene el SHA del último commit | 0 |
+| **git_get_changed_files** | Lista archivos modificados (working/staging) | 0 |
+| **git_validate_repo** | Valida si un directorio es un repositorio Git válido | 0 |
+| **git_context** | Auto-detecta contexto Git para optimizar tokens | 0 |
+
+### ⚙️ Operaciones Git Básicas
+
+| Herramienta | Descripción | Tokens |
+|-------------|-------------|--------|
+| **git_set_workspace** | Configura el directorio de trabajo para Git | 0 |
+| **git_add** | Agrega archivos al staging area | 0 |
+| **git_commit** | Hace commit de los cambios en staging | 0 |
+| **git_push** | Sube cambios al repositorio remoto | 0 |
+| **git_pull** | Baja cambios del repositorio remoto | 0 |
+| **git_checkout** | Cambia de rama o crea nueva rama | 0 |
+
+### 📊 Análisis y Gestión Git
+
+| Herramienta | Descripción | Tokens |
+|-------------|-------------|--------|
+| **git_log_analysis** | Análisis completo del historial de commits | 0 |
+| **git_diff_files** | Muestra archivos modificados con estadísticas | 0 |
+| **git_branch_list** | Lista todas las ramas con información detallada | 0 |
+| **git_stash** | Operaciones de stash (list, push, pop, apply, drop, clear) | 0 |
+| **git_remote** | Gestión de repositorios remotos (list, add, remove, show, fetch) | 0 |
+| **git_tag** | Gestión de tags/etiquetas (list, create, delete, push, show) | 0 |
+| **git_clean** | Limpieza de archivos sin seguimiento | 0 |
+
+### 🚀 Operaciones Git Avanzadas
+
+| Herramienta | Descripción | Tokens |
+|-------------|-------------|--------|
+| **git_checkout_remote** | Checkout de rama remota con tracking local | 0 |
+| **git_merge** | Merge de ramas con validaciones de seguridad | 0 |
+| **git_rebase** | Rebase con rama especificada | 0 |
+| **git_pull_with_strategy** | Pull con estrategias (merge, rebase, ff-only) | 0 |
+| **git_force_push** | Push con --force-with-lease (con backup automático) | 0 |
+| **git_push_upstream** | Push configurando upstream tracking | 0 |
+| **git_sync_with_remote** | Sincronización automática con rama remota | 0 |
+
+### 🛡️ Gestión de Conflictos
+
+| Herramienta | Descripción | Tokens |
+|-------------|-------------|--------|
+| **git_safe_merge** | Merge seguro con backup y detección de conflictos | 0 |
+| **git_conflict_status** | Estado detallado de conflictos en merge/rebase | 0 |
+| **git_resolve_conflicts** | Resolución automática con estrategias (theirs, ours, abort) | 0 |
+| **git_validate_clean_state** | Valida que el working directory esté limpio | 0 |
+| **git_detect_conflicts** | Detecta conflictos potenciales entre ramas | 0 |
+| **git_create_backup** | Crea backup/tag del estado actual | 0 |
+
+### 🔀 Operaciones Híbridas (Git Local → GitHub API)
+
+| Herramienta | Descripción | Tokens |
+|-------------|-------------|--------|
+| **create_file** | Crea archivo PRIORIZANDO Git local sobre GitHub API | 0* |
+| **update_file** | Actualiza archivo PRIORIZANDO Git local sobre GitHub API | 0* |
+
+*Usa 0 tokens si Git local está disponible, fallback a GitHub API si es necesario
+
+### 🌐 GitHub API (Operaciones en la Nube)
+
+| Herramienta | Descripción | Tokens |
+|-------------|-------------|--------|
+| **github_list_repos** | Lista repositorios del usuario | ✓ |
+| **github_create_repo** | Crea nuevo repositorio | ✓ |
+| **github_list_prs** | Lista pull requests | ✓ |
+| **github_create_pr** | Crea nuevo pull request | ✓ |
 
 ## 🚀 Uso
 
@@ -176,8 +237,10 @@ Con estos cambios, el MCP es ahora mucho más seguro. ¡Un saludo, amigo!
 - ✅ **Soporte multi-perfil**: Implementado y testeado
 - ✅ **Gestión de permisos**: Documentada y verificada
 - ✅ **Testing completo**: Todas las funciones probadas con tests unitarios
-- ✅ **Dependencias actualizadas**: go-github v74.0.0, oauth2 v0.32.0 (latest stable)
-- ✅ **Listo para producción**: Stable release v2.2.1
+- ✅ **Dependencias actualizadas**: go-github v76.0.0, oauth2 v0.32.0
+- ✅ **45+ Herramientas Git**: Operaciones locales (0 tokens) y avanzadas
+- ✅ **Gestión de conflictos**: Merge seguro, detección y resolución automática
+- ✅ **Listo para producción**: Stable release v2.0
 
 📋 **Changelog**: Ver [CHANGELOG.md](CHANGELOG.md) para historial completo de cambios
 
