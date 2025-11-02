@@ -18,7 +18,7 @@ go mod tidy
 
 REM Compilar
 echo 🔧 Compilando...
-go build -o mcp-go-github-modular.exe main.go
+go build -o mcp-go-github-modular.exe ./cmd/github-mcp-server/main.go
 if %errorlevel% neq 0 (
     echo ❌ Error de compilación
     exit /b 1

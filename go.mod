@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.6
 
 require (
-	github.com/google/go-github/v74 v74.0.0
+	github.com/google/go-github/v76 v76.0.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/oauth2 v0.32.0
 )

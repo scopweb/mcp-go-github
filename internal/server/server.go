@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/jotajotape/github-go-server-mcp/internal/hybrid"
-	"github.com/jotajotape/github-go-server-mcp/internal/interfaces"
-	"github.com/jotajotape/github-go-server-mcp/internal/types"
+	"github.com/jotajotape/github-go-server-mcp/pkg/interfaces"
+	"github.com/jotajotape/github-go-server-mcp/pkg/types"
 )
 
 // MCPServer representa el servidor MCP principal
@@ -395,7 +395,7 @@ func ListTools() types.ToolsListResult {
 		},
 		{
 			Name:        "git_safe_merge",
-			Description: "🛡️ Merge seguro con backup automático y detección de conflictos",
+			Description: "🛡️ Merge seguro con backup automático y detección de conflicts",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -407,7 +407,7 @@ func ListTools() types.ToolsListResult {
 		},
 		{
 			Name:        "git_conflict_status",
-			Description: "⚠️ Estado detallado de conflictos en merge/rebase",
+			Description: "⚠️ Estado detallado de conflicts en merge/rebase",
 			InputSchema: types.ToolInputSchema{
 				Type:       "object",
 				Properties: map[string]types.Property{},
@@ -415,7 +415,7 @@ func ListTools() types.ToolsListResult {
 		},
 		{
 			Name:        "git_resolve_conflicts",
-			Description: "🔧 Resolución automática de conflictos con estrategias",
+			Description: "🔧 Resolución automática de conflicts con estrategias",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -434,7 +434,7 @@ func ListTools() types.ToolsListResult {
 		},
 		{
 			Name:        "git_detect_conflicts",
-			Description: "🔍 Detecta conflictos potenciales entre ramas",
+			Description: "🔍 Detecta conflicts potenciales entre ramas",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{

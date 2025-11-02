@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/interfaces"
+	"github.com/jotajotape/github-go-server-mcp/pkg/interfaces"
 )
 
 // stat is a variable that can be replaced in tests for mocking file existence
@@ -75,7 +75,7 @@ func SmartUpdateFile(gitOps interfaces.GitOperations, githubOps interfaces.GitHu
 			// Si UpdateFile falla, también consideramos que es un fallo local
 		}
 		// Si Stat falla (el archivo no existe) o si UpdateFile falla, devolvemos el error de fallback
-		return fmt.Sprintf("⚠️ Archivo no existe localmente o Git local falló\n⤵️ Intentando GitHub API..."), fmt.Errorf("git_local_failed")
+		return "⚠️ Archivo no existe localmente o Git local falló\n⤵️ Intentando GitHub API...", fmt.Errorf("git_local_failed")
 	}
 
 	// 2. Solo si NO hay Git local, usar GitHub API
@@ -90,7 +90,7 @@ func AutoDetectContext(gitOps interfaces.GitOperations) string {
 🌿 Rama: %s
 🔗 Remote: %s
 
-✅ RECOMENDACIÓN: Usar comandos git_* para operaciones sin costo de tokens
+✅ RECOMENDACIÓN: Usar commands git_* para operaciones sin costo de tokens
 - create_file/update_file: 0 tokens (Git local)
 - git_add + git_commit: 0 tokens
 - git_push: Solo si necesario sincronizar

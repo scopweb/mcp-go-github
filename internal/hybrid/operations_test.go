@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-github/v74/github"
-	"github.com/jotajotape/github-go-server-mcp/internal/types"
+	"github.com/google/go-github/v76/github"
+	"github.com/jotajotape/github-go-server-mcp/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,37 +30,37 @@ type mockGitOperations struct {
 	GetChangedFilesFunc func(staged bool) (string, error)
 }
 
-func (m *mockGitOperations) HasGit() bool                          { return m.hasGit }
-func (m *mockGitOperations) IsGitRepo() bool                       { return m.isGitRepo }
-func (m *mockGitOperations) GetRepoPath() string                   { return m.repoPath }
-func (m *mockGitOperations) GetCurrentBranch() string              { return m.currentBranch }
-func (m *mockGitOperations) GetRemoteURL() string                  { return m.remoteURL }
-func (m *mockGitOperations) Status() (string, error)               { return "mock status", nil }
-func (m *mockGitOperations) Add(path string) (string, error)       { return "mock add", nil }
-func (m *mockGitOperations) Commit(message string) (string, error) { return "mock commit", nil }
-func (m *mockGitOperations) Push(branch string) (string, error)    { return "mock push", nil }
-func (m *mockGitOperations) Pull(branch string) (string, error)    { return "mock pull", nil }
-func (m *mockGitOperations) Checkout(branch string, create bool) (string, error) {
+func (m *mockGitOperations) HasGit() bool                    { return m.hasGit }
+func (m *mockGitOperations) IsGitRepo() bool                 { return m.isGitRepo }
+func (m *mockGitOperations) GetRepoPath() string             { return m.repoPath }
+func (m *mockGitOperations) GetCurrentBranch() string        { return m.currentBranch }
+func (m *mockGitOperations) GetRemoteURL() string            { return m.remoteURL }
+func (m *mockGitOperations) Status() (string, error)         { return "mock status", nil }
+func (m *mockGitOperations) Add(_ string) (string, error)    { return "mock add", nil }
+func (m *mockGitOperations) Commit(_ string) (string, error) { return "mock commit", nil }
+func (m *mockGitOperations) Push(_ string) (string, error)   { return "mock push", nil }
+func (m *mockGitOperations) Pull(_ string) (string, error)   { return "mock pull", nil }
+func (m *mockGitOperations) Checkout(_ string, _ bool) (string, error) {
 	return "mock checkout", nil
 }
-func (m *mockGitOperations) LogAnalysis(limit string) (string, error)     { return "mock log", nil }
-func (m *mockGitOperations) DiffFiles(staged bool) (string, error)        { return "mock diff", nil }
-func (m *mockGitOperations) Stash(operation, name string) (string, error) { return "mock stash", nil }
-func (m *mockGitOperations) Remote(operation, name, url string) (string, error) {
+func (m *mockGitOperations) LogAnalysis(_ string) (string, error) { return "mock log", nil }
+func (m *mockGitOperations) DiffFiles(_ bool) (string, error)     { return "mock diff", nil }
+func (m *mockGitOperations) Stash(_, _ string) (string, error)    { return "mock stash", nil }
+func (m *mockGitOperations) Remote(_, _, _ string) (string, error) {
 	return "mock remote", nil
 }
-func (m *mockGitOperations) Tag(operation, tagName, message string) (string, error) {
+func (m *mockGitOperations) Tag(_, _, _ string) (string, error) {
 	return "mock tag", nil
 }
-func (m *mockGitOperations) Clean(operation string, dryRun bool) (string, error) {
+func (m *mockGitOperations) Clean(_ string, _ bool) (string, error) {
 	return "mock clean", nil
 }
 func (m *mockGitOperations) GetLastCommit() (string, error) { return "mock last commit", nil }
-func (m *mockGitOperations) GetFileContent(path, ref string) (string, error) {
+func (m *mockGitOperations) GetFileContent(_, _ string) (string, error) {
 	return "mock content", nil
 }
-func (m *mockGitOperations) ValidateRepo(path string) (string, error) { return "mock validate", nil }
-func (m *mockGitOperations) ListFiles(ref string) (string, error)     { return "mock list files", nil }
+func (m *mockGitOperations) ValidateRepo(_ string) (string, error) { return "mock validate", nil }
+func (m *mockGitOperations) ListFiles(_ string) (string, error)    { return "mock list files", nil }
 
 func (m *mockGitOperations) CreateFile(path, content string) (string, error) {
 	if m.createFileFunc != nil {
@@ -99,22 +99,84 @@ func (m *mockGitOperations) GetChangedFiles(staged bool) (string, error) {
 	return "mock changed files", nil
 }
 
+// Advanced branch operations
+func (m *mockGitOperations) CheckoutRemote(_ string, _ string) (string, error) {
+	return "mock checkout remote", nil
+}
+func (m *mockGitOperations) Merge(_ string, _ string) (string, error) {
+	return "mock merge", nil
+}
+func (m *mockGitOperations) Rebase(_ string) (string, error) {
+	return "mock rebase", nil
+}
+
+// Enhanced pull/push operations
+func (m *mockGitOperations) PullWithStrategy(_ string, _ string) (string, error) {
+	return "mock pull with strategy", nil
+}
+func (m *mockGitOperations) ForcePush(_ string, _ bool) (string, error) {
+	return "mock force push", nil
+}
+func (m *mockGitOperations) PushUpstream(_ string) (string, error) {
+	return "mock push upstream", nil
+}
+
+// Batch operations
+func (m *mockGitOperations) SyncWithRemote(_ string) (string, error) {
+	return "mock sync with remote", nil
+}
+func (m *mockGitOperations) SafeMerge(_ string, _ string) (string, error) {
+	return "mock safe merge", nil
+}
+
+// Conflict management
+func (m *mockGitOperations) ConflictStatus() (string, error) {
+	return "mock conflict status", nil
+}
+func (m *mockGitOperations) ResolveConflicts(_ string) (string, error) {
+	return "mock resolve conflicts", nil
+}
+
+// Validation operations
+func (m *mockGitOperations) ValidateCleanState() (bool, error) {
+	return true, nil
+}
+func (m *mockGitOperations) DetectPotentialConflicts(_ string, _ string) (string, error) {
+	return "mock detect conflicts", nil
+}
+func (m *mockGitOperations) CreateBackup(_ string) (string, error) {
+	return "mock create backup", nil
+}
+
+// Phase 1: Essential commands
+func (m *mockGitOperations) Reset(_ string, _ string, _ []string) (string, error) {
+	return "mock reset", nil
+}
+
+// Phase 2: Conflict management
+func (m *mockGitOperations) ShowConflict(_ string) (string, error) {
+	return "mock show conflict", nil
+}
+func (m *mockGitOperations) ResolveFile(_ string, _ string, _ *string) (string, error) {
+	return "mock resolve file", nil
+}
+
 // mockGitHubOperations es una implementación simulada de interfaces.GitHubOperations
 type mockGitHubOperations struct {
 	createFileFunc func(ctx context.Context, owner, repo, path, content, message, branch string) (*github.RepositoryContentResponse, error)
 	updateFileFunc func(ctx context.Context, owner, repo, path, content, message, sha, branch string) (*github.RepositoryContentResponse, error)
 }
 
-func (m *mockGitHubOperations) ListRepositories(ctx context.Context, listType string) ([]*github.Repository, error) {
+func (m *mockGitHubOperations) ListRepositories(_ context.Context, _ string) ([]*github.Repository, error) {
 	return nil, nil
 }
-func (m *mockGitHubOperations) CreateRepository(ctx context.Context, name, description string, private bool) (*github.Repository, error) {
+func (m *mockGitHubOperations) CreateRepository(_ context.Context, _ string, _ string, _ bool) (*github.Repository, error) {
 	return nil, nil
 }
-func (m *mockGitHubOperations) ListPullRequests(ctx context.Context, owner, repo, state string) ([]*github.PullRequest, error) {
+func (m *mockGitHubOperations) ListPullRequests(_ context.Context, _ string, _ string, _ string) ([]*github.PullRequest, error) {
 	return nil, nil
 }
-func (m *mockGitHubOperations) CreatePullRequest(ctx context.Context, owner, repo, title, head, base, body string) (*github.PullRequest, error) {
+func (m *mockGitHubOperations) CreatePullRequest(_ context.Context, _ string, _ string, _ string, _ string, _ string, _ string) (*github.PullRequest, error) {
 	return nil, nil
 }
 func (m *mockGitHubOperations) CreateFile(ctx context.Context, owner, repo, path, content, message, branch string) (*github.RepositoryContentResponse, error) {
@@ -146,7 +208,7 @@ func TestAutoDetectContext(t *testing.T) {
 🌿 Rama: %s
 🔗 Remote: %s
 
-✅ RECOMENDACIÓN: Usar comandos git_* para operaciones sin costo de tokens
+✅ RECOMENDACIÓN: Usar commands git_* para operaciones sin costo de tokens
 - create_file/update_file: 0 tokens (Git local)
 - git_add + git_commit: 0 tokens
 - git_push: Solo si necesario sincronizar
@@ -186,7 +248,7 @@ func TestSmartCreateFile(t *testing.T) {
 		mockGit := &mockGitOperations{
 			hasGit:    true,
 			isGitRepo: true,
-			createFileFunc: func(path, content string) (string, error) {
+			createFileFunc: func(path string, content string) (string, error) {
 				assert.Equal(t, "test.txt", path)
 				assert.Equal(t, "hello world", content)
 				return "Local file created", nil
@@ -205,13 +267,13 @@ func TestSmartCreateFile(t *testing.T) {
 		mockGit := &mockGitOperations{
 			hasGit:    true,
 			isGitRepo: true,
-			createFileFunc: func(path, content string) (string, error) {
+			createFileFunc: func(_ string, _ string) (string, error) {
 				return "", errors.New("local git error")
 			},
 		}
 		mockGithub := &mockGitHubOperations{
-			createFileFunc: func(ctx context.Context, owner, repo, path, content, message, branch string) (*github.RepositoryContentResponse, error) {
-				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.String("12345")}}
+			createFileFunc: func(_ context.Context, _ string, _ string, _ string, _ string, _ string, _ string) (*github.RepositoryContentResponse, error) {
+				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.Ptr("12345")}}
 				return resp, nil
 			},
 		}
@@ -229,8 +291,8 @@ func TestSmartCreateFile(t *testing.T) {
 	t.Run("Success with GitHub API (no local git)", func(t *testing.T) {
 		mockGit := &mockGitOperations{hasGit: false}
 		mockGithub := &mockGitHubOperations{
-			createFileFunc: func(ctx context.Context, owner, repo, path, content, message, branch string) (*github.RepositoryContentResponse, error) {
-				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.String("abcdef")}}
+			createFileFunc: func(_ context.Context, _ string, _ string, _ string, _ string, _ string, _ string) (*github.RepositoryContentResponse, error) {
+				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.Ptr("abcdef")}}
 				return resp, nil
 			},
 		}
@@ -258,19 +320,19 @@ func TestSmartUpdateFile(t *testing.T) {
 
 	t.Run("Success with Git local", func(t *testing.T) {
 		originalStat := stat
-		stat = func(name string) (os.FileInfo, error) {
+		stat = func(_ string) (os.FileInfo, error) {
 			return os.Stat(filepath.Join(tmpDir, "test.txt"))
 		}
 		defer func() { stat = originalStat }()
 
-		err := os.WriteFile(filepath.Join(tmpDir, "test.txt"), []byte("old content"), 0644)
+		err := os.WriteFile(filepath.Join(tmpDir, "test.txt"), []byte("old content"), 0600)
 		assert.NoError(t, err)
 
 		mockGit := &mockGitOperations{
 			hasGit:    true,
 			isGitRepo: true,
 			repoPath:  tmpDir,
-			updateFileFunc: func(path, content, sha string) (string, error) {
+			updateFileFunc: func(_ string, _ string, _ string) (string, error) {
 				return "Local file updated", nil
 			},
 		}
@@ -283,7 +345,7 @@ func TestSmartUpdateFile(t *testing.T) {
 
 	t.Run("Fallback to GitHub API when local file does not exist", func(t *testing.T) {
 		originalStat := stat
-		stat = func(name string) (os.FileInfo, error) {
+		stat = func(_ string) (os.FileInfo, error) {
 			return nil, os.ErrNotExist
 		}
 		defer func() { stat = originalStat }()
@@ -294,8 +356,8 @@ func TestSmartUpdateFile(t *testing.T) {
 			repoPath:  tmpDir,
 		}
 		mockGithub := &mockGitHubOperations{
-			updateFileFunc: func(ctx context.Context, owner, repo, path, content, message, sha, branch string) (*github.RepositoryContentResponse, error) {
-				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.String("67890")}}
+			updateFileFunc: func(_ context.Context, _ string, _ string, _ string, _ string, _ string, _ string, _ string) (*github.RepositoryContentResponse, error) {
+				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.Ptr("67890")}}
 				return resp, nil
 			},
 		}
@@ -313,8 +375,8 @@ func TestSmartUpdateFile(t *testing.T) {
 	t.Run("Success with GitHub API (no local git)", func(t *testing.T) {
 		mockGit := &mockGitOperations{hasGit: false}
 		mockGithub := &mockGitHubOperations{
-			updateFileFunc: func(ctx context.Context, owner, repo, path, content, message, sha, branch string) (*github.RepositoryContentResponse, error) {
-				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.String("uvwxyz")}}
+			updateFileFunc: func(_ context.Context, _ string, _ string, _ string, _ string, _ string, _ string, _ string) (*github.RepositoryContentResponse, error) {
+				resp := &github.RepositoryContentResponse{Commit: github.Commit{SHA: github.Ptr("uvwxyz")}}
 				return resp, nil
 			},
 		}

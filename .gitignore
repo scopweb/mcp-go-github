@@ -8,11 +8,12 @@
 # Build output
 /github-mcp-modular.exe
 /github-mcp.exe
+/mcp-go-github-modular.exe
 github-mcp-modular.exe~
 
 # Go specific
-vendor/
-go.sum
+# vendor/ - Incluimos vendor para builds reproducibles
+# go.sum - Incluimos go.sum para verificación de dependencias
 
 # Environment variables
 .env
