@@ -37,6 +37,8 @@ Thumbs.db
 # Development docs (not needed in repo)
 CONVERSATION.md
 *.prompt.md
+EstudioPlandeActulizacion.md
+ejemplos_github_repositorios/
 
 # Test artifacts
 test_mcp.go
