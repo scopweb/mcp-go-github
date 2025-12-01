@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/jotajotape/github-go-server-mcp/internal/hybrid"
+	"github.com/jotajotape/github-go-server-mcp/pkg/dashboard"
 	"github.com/jotajotape/github-go-server-mcp/pkg/interfaces"
 	"github.com/jotajotape/github-go-server-mcp/pkg/types"
 )
@@ -542,6 +544,84 @@ func ListTools() types.ToolsListResult {
 				Required: []string{"owner", "repo", "title", "head", "base"},
 			},
 		},
+
+		// === HERRAMIENTAS DASHBOARD - Asistente GitHub ===
+		{
+			Name:        "github_dashboard",
+			Description: "📊 Dashboard completo: notificaciones, issues asignadas, PRs pendientes, alertas de seguridad, workflows fallidos",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner": {Type: "string", Description: "Propietario del repositorio (opcional para alertas de seguridad)"},
+					"repo":  {Type: "string", Description: "Nombre del repositorio (opcional para alertas de seguridad)"},
+				},
+			},
+		},
+		{
+			Name:        "github_notifications",
+			Description: "🔔 Lista notificaciones pendientes de GitHub",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"all":           {Type: "boolean", Description: "Incluir notificaciones leídas"},
+					"participating": {Type: "boolean", Description: "Solo notificaciones donde participas"},
+				},
+			},
+		},
+		{
+			Name:        "github_assigned_issues",
+			Description: "📋 Issues asignadas a ti pendientes de resolver",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"state": {Type: "string", Description: "Estado: open, closed, all (default: open)"},
+				},
+			},
+		},
+		{
+			Name:        "github_prs_to_review",
+			Description: "👀 Pull Requests pendientes de tu revisión",
+			InputSchema: types.ToolInputSchema{
+				Type:       "object",
+				Properties: map[string]types.Property{},
+			},
+		},
+		{
+			Name:        "github_security_alerts",
+			Description: "🛡️ Alertas de seguridad: Dependabot, Secret Scanning, Code Scanning",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner": {Type: "string", Description: "Propietario del repositorio"},
+					"repo":  {Type: "string", Description: "Nombre del repositorio"},
+					"type":  {Type: "string", Description: "Tipo: dependabot, secret, code, all (default: all)"},
+				},
+				Required: []string{"owner", "repo"},
+			},
+		},
+		{
+			Name:        "github_failed_workflows",
+			Description: "❌ Workflows de GitHub Actions fallidos recientemente",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner": {Type: "string", Description: "Propietario del repositorio"},
+					"repo":  {Type: "string", Description: "Nombre del repositorio"},
+				},
+				Required: []string{"owner", "repo"},
+			},
+		},
+		{
+			Name:        "github_mark_notification_read",
+			Description: "✅ Marca una notificación como leída",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"thread_id": {Type: "string", Description: "ID del thread de la notificación"},
+				},
+				Required: []string{"thread_id"},
+			},
+		},
 	}
 
 	return types.ToolsListResult{Tools: tools}
@@ -775,6 +855,197 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		} else {
 			text = fmt.Sprintf("Successfully created pull request #%d: %s", pr.GetNumber(), pr.GetHTMLURL())
 		}
+
+	// === HERRAMIENTAS DASHBOARD ===
+	case "github_dashboard":
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			err = fmt.Errorf("GITHUB_TOKEN environment variable not set")
+		} else {
+			dashClient := dashboard.NewDashboardClient(token)
+			summary, dashErr := dashClient.GetFullDashboard(ctx, true)
+			if dashErr != nil {
+				err = dashErr
+			} else {
+				text = dashboard.FormatDashboardSummary(summary, true)
+			}
+		}
+
+	case "github_notifications":
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			err = fmt.Errorf("GITHUB_TOKEN environment variable not set")
+		} else {
+			dashClient := dashboard.NewDashboardClient(token)
+			all, _ := arguments["all"].(bool)
+			notifications, notifErr := dashClient.GetNotifications(ctx, all)
+			if notifErr != nil {
+				err = notifErr
+			} else {
+				if len(notifications) == 0 {
+					text = "🔔 No tienes notificaciones pendientes"
+				} else {
+					var lines []string
+					lines = append(lines, fmt.Sprintf("🔔 **%d Notificaciones:**\n", len(notifications)))
+					for _, n := range notifications {
+						status := "🔵"
+						if n.Unread {
+							status = "🔴"
+						}
+						lines = append(lines, fmt.Sprintf("%s [%s] %s - %s", status, n.Reason, n.Subject.Title, n.Repository.FullName))
+					}
+					text = strings.Join(lines, "\n")
+				}
+			}
+		}
+
+	case "github_assigned_issues":
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			err = fmt.Errorf("GITHUB_TOKEN environment variable not set")
+		} else {
+			dashClient := dashboard.NewDashboardClient(token)
+			issues, issuesErr := dashClient.GetAssignedIssues(ctx)
+			if issuesErr != nil {
+				err = issuesErr
+			} else {
+				if len(issues) == 0 {
+					text = "📋 No tienes issues asignadas"
+				} else {
+					var lines []string
+					lines = append(lines, fmt.Sprintf("📋 **%d Issues Asignadas:**\n", len(issues)))
+					for _, issue := range issues {
+						var labels []string
+						for _, l := range issue.Labels {
+							labels = append(labels, l.Name)
+						}
+						labelStr := ""
+						if len(labels) > 0 {
+							labelStr = fmt.Sprintf(" [%s]", strings.Join(labels, ", "))
+						}
+						lines = append(lines, fmt.Sprintf("• #%d: %s%s", issue.Number, issue.Title, labelStr))
+					}
+					text = strings.Join(lines, "\n")
+				}
+			}
+		}
+
+	case "github_prs_to_review":
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			err = fmt.Errorf("GITHUB_TOKEN environment variable not set")
+		} else {
+			dashClient := dashboard.NewDashboardClient(token)
+			prs, prsErr := dashClient.GetPRsToReview(ctx)
+			if prsErr != nil {
+				err = prsErr
+			} else {
+				if len(prs) == 0 {
+					text = "👀 No tienes PRs pendientes de revisión"
+				} else {
+					var lines []string
+					lines = append(lines, fmt.Sprintf("👀 **%d PRs Pendientes de Revisión:**\n", len(prs)))
+					for _, pr := range prs {
+						lines = append(lines, fmt.Sprintf("• #%d: %s - %s", pr.Number, pr.Title, pr.HTMLURL))
+					}
+					text = strings.Join(lines, "\n")
+				}
+			}
+		}
+
+	case "github_security_alerts":
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			err = fmt.Errorf("GITHUB_TOKEN environment variable not set")
+		} else {
+			dashClient := dashboard.NewDashboardClient(token)
+			owner, _ := arguments["owner"].(string)
+			repo, _ := arguments["repo"].(string)
+			alertType, _ := arguments["type"].(string)
+			if alertType == "" {
+				alertType = "all"
+			}
+
+			var lines []string
+			lines = append(lines, "🛡️ **Alertas de Seguridad:**\n")
+
+			if alertType == "all" || alertType == "dependabot" {
+				depAlerts, _ := dashClient.GetDependabotAlerts(ctx, owner, repo)
+				if len(depAlerts) > 0 {
+					lines = append(lines, fmt.Sprintf("**Dependabot (%d):**", len(depAlerts)))
+					for _, a := range depAlerts {
+						lines = append(lines, fmt.Sprintf("  • [%s] %s - %s", a.SecurityAdvisory.Severity, a.SecurityAdvisory.Summary, a.Dependency.Package.Name))
+					}
+				}
+			}
+
+			if alertType == "all" || alertType == "secret" {
+				secretAlerts, _ := dashClient.GetSecretScanningAlerts(ctx, owner, repo)
+				if len(secretAlerts) > 0 {
+					lines = append(lines, fmt.Sprintf("\n**Secret Scanning (%d):**", len(secretAlerts)))
+					for _, a := range secretAlerts {
+						lines = append(lines, fmt.Sprintf("  • [%s] %s", a.State, a.SecretType))
+					}
+				}
+			}
+
+			if alertType == "all" || alertType == "code" {
+				codeAlerts, _ := dashClient.GetCodeScanningAlerts(ctx, owner, repo)
+				if len(codeAlerts) > 0 {
+					lines = append(lines, fmt.Sprintf("\n**Code Scanning (%d):**", len(codeAlerts)))
+					for _, a := range codeAlerts {
+						lines = append(lines, fmt.Sprintf("  • [%s] %s - %s", a.Rule.Severity, a.Rule.Description, a.MostRecentInstance.Location.Path))
+					}
+				}
+			}
+
+			if len(lines) == 1 {
+				text = "🛡️ No se encontraron alertas de seguridad"
+			} else {
+				text = strings.Join(lines, "\n")
+			}
+		}
+
+	case "github_failed_workflows":
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			err = fmt.Errorf("GITHUB_TOKEN environment variable not set")
+		} else {
+			dashClient := dashboard.NewDashboardClient(token)
+			owner, _ := arguments["owner"].(string)
+			repo, _ := arguments["repo"].(string)
+			workflows, wfErr := dashClient.GetFailedWorkflows(ctx, owner, repo)
+			if wfErr != nil {
+				err = wfErr
+			} else {
+				if len(workflows) == 0 {
+					text = "✅ No hay workflows fallidos recientemente"
+				} else {
+					var lines []string
+					lines = append(lines, fmt.Sprintf("❌ **%d Workflows Fallidos:**\n", len(workflows)))
+					for _, wf := range workflows {
+						lines = append(lines, fmt.Sprintf("• %s - Run #%d - %s", wf.Name, wf.RunNumber, wf.HTMLURL))
+					}
+					text = strings.Join(lines, "\n")
+				}
+			}
+		}
+
+	case "github_mark_notification_read":
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			err = fmt.Errorf("GITHUB_TOKEN environment variable not set")
+		} else {
+			dashClient := dashboard.NewDashboardClient(token)
+			threadID, _ := arguments["thread_id"].(string)
+			markErr := dashClient.MarkNotificationAsRead(ctx, threadID)
+			if markErr != nil {
+				err = markErr
+			} else {
+				text = fmt.Sprintf("✅ Notificación %s marcada como leída", threadID)
+			}
+		}
+
 	default:
 		return types.ToolCallResult{}, fmt.Errorf("tool not found")
 	}

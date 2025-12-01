@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	Version = "v76.0.0"
+	Version = "v77.0.0"
 
 	defaultAPIVersion = "2022-11-28"
 	defaultBaseURL    = "https://api.github.com/"
@@ -218,6 +218,7 @@ type Client struct {
 	Meta               *MetaService
 	Migrations         *MigrationService
 	Organizations      *OrganizationsService
+	PrivateRegistries  *PrivateRegistriesService
 	Projects           *ProjectsService
 	PullRequests       *PullRequestsService
 	RateLimit          *RateLimitService
@@ -354,7 +355,9 @@ func (c *Client) WithAuthToken(token string) *Client {
 	c2.client.Transport = roundTripperFunc(
 		func(req *http.Request) (*http.Response, error) {
 			req = req.Clone(req.Context())
-			req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			if token != "" {
+				req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			}
 			return transport.RoundTrip(req)
 		},
 	)
@@ -457,6 +460,7 @@ func (c *Client) initialize() {
 	c.Meta = (*MetaService)(&c.common)
 	c.Migrations = (*MigrationService)(&c.common)
 	c.Organizations = (*OrganizationsService)(&c.common)
+	c.PrivateRegistries = (*PrivateRegistriesService)(&c.common)
 	c.Projects = (*ProjectsService)(&c.common)
 	c.PullRequests = (*PullRequestsService)(&c.common)
 	c.RateLimit = (*RateLimitService)(&c.common)
@@ -846,7 +850,7 @@ const (
 
 // bareDo sends an API request using `caller` http.Client passed in the parameters
 // and lets you handle the api response. If an error or API Error occurs, the error
-// will contain more information. Otherwise you are supposed to read and close the
+// will contain more information. Otherwise, you are supposed to read and close the
 // response's Body. If rate limit is exceeded and reset time is in the future,
 // bareDo returns *RateLimitError immediately without making a network API call.
 //
@@ -963,7 +967,7 @@ func (c *Client) bareDo(ctx context.Context, caller *http.Client, req *http.Requ
 }
 
 // BareDo sends an API request and lets you handle the api response. If an error
-// or API Error occurs, the error will contain more information. Otherwise you
+// or API Error occurs, the error will contain more information. Otherwise, you
 // are supposed to read and close the response's Body. If rate limit is exceeded
 // and reset time is in the future, BareDo returns *RateLimitError immediately
 // without making a network API call.

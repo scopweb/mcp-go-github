@@ -8,7 +8,7 @@ Package github provides a client for using the GitHub API.
 
 Usage:
 
-	import "github.com/google/go-github/v76/github"	// with go modules enabled (GO111MODULE=on or outside GOPATH)
+	import "github.com/google/go-github/v77/github"	// with go modules enabled (GO111MODULE=on or outside GOPATH)
 	import "github.com/google/go-github/github"     // with go modules disabled
 
 Construct a new GitHub client, then use the various services on the client to
@@ -40,7 +40,7 @@ For more sample code snippets, head over to the https://github.com/google/go-git
 
 # Authentication
 
-Use [Client.WithAuthToken] to configure your client to authenticate using an Oauth token
+Use [Client.WithAuthToken] to configure your client to authenticate using an OAuth token
 (for example, a personal access token). This is what is needed for a majority of use cases
 aside from GitHub Apps.
 

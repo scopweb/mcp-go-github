@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/google/go-github/v76/github"
+	"github.com/google/go-github/v77/github"
 	"github.com/jotajotape/github-go-server-mcp/pkg/types"
 )
 

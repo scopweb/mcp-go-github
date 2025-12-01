@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	ghclient "github.com/google/go-github/v76/github"
+	ghclient "github.com/google/go-github/v77/github"
 	"golang.org/x/oauth2"
 
 	"github.com/jotajotape/github-go-server-mcp/internal/server"
