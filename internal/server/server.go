@@ -622,6 +622,138 @@ func ListTools() types.ToolsListResult {
 				Required: []string{"thread_id"},
 			},
 		},
+		// === RESPONSE CAPABILITIES ===
+		{
+			Name:        "github_comment_issue",
+			Description: "💬 Agregar un comentario a un issue",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":  {Type: "string", Description: "Propietario del repositorio"},
+					"repo":   {Type: "string", Description: "Nombre del repositorio"},
+					"number": {Type: "number", Description: "Número del issue"},
+					"body":   {Type: "string", Description: "Texto del comentario (soporta Markdown)"},
+				},
+				Required: []string{"owner", "repo", "number", "body"},
+			},
+		},
+		{
+			Name:        "github_comment_pr",
+			Description: "💬 Agregar un comentario a un pull request",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":  {Type: "string", Description: "Propietario del repositorio"},
+					"repo":   {Type: "string", Description: "Nombre del repositorio"},
+					"number": {Type: "number", Description: "Número del PR"},
+					"body":   {Type: "string", Description: "Texto del comentario (soporta Markdown)"},
+				},
+				Required: []string{"owner", "repo", "number", "body"},
+			},
+		},
+		{
+			Name:        "github_review_pr",
+			Description: "✅ Crear una review en un pull request (aprobar, solicitar cambios o comentar)",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":  {Type: "string", Description: "Propietario del repositorio"},
+					"repo":   {Type: "string", Description: "Nombre del repositorio"},
+					"number": {Type: "number", Description: "Número del PR"},
+					"event":  {Type: "string", Description: "Tipo de review: APPROVE, REQUEST_CHANGES, COMMENT"},
+					"body":   {Type: "string", Description: "Comentario de la review (requerido para REQUEST_CHANGES y COMMENT)"},
+				},
+				Required: []string{"owner", "repo", "number", "event"},
+			},
+		},
+		// === REPAIR CAPABILITIES ===
+		{
+			Name:        "github_close_issue",
+			Description: "🔒 Cerrar un issue con un comentario opcional",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":   {Type: "string", Description: "Propietario del repositorio"},
+					"repo":    {Type: "string", Description: "Nombre del repositorio"},
+					"number":  {Type: "number", Description: "Número del issue"},
+					"comment": {Type: "string", Description: "Comentario de cierre opcional"},
+				},
+				Required: []string{"owner", "repo", "number"},
+			},
+		},
+		{
+			Name:        "github_merge_pr",
+			Description: "🔀 Mergear un pull request",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":          {Type: "string", Description: "Propietario del repositorio"},
+					"repo":           {Type: "string", Description: "Nombre del repositorio"},
+					"number":         {Type: "number", Description: "Número del PR"},
+					"commit_message": {Type: "string", Description: "Mensaje de commit de merge opcional"},
+					"merge_method":   {Type: "string", Description: "Método de merge: merge, squash, rebase (default: merge)"},
+				},
+				Required: []string{"owner", "repo", "number"},
+			},
+		},
+		{
+			Name:        "github_rerun_workflow",
+			Description: "🔄 Re-ejecutar un workflow fallido de GitHub Actions",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":           {Type: "string", Description: "Propietario del repositorio"},
+					"repo":            {Type: "string", Description: "Nombre del repositorio"},
+					"run_id":          {Type: "number", Description: "ID del workflow run"},
+					"failed_jobs_only": {Type: "boolean", Description: "Re-ejecutar solo jobs fallidos (default: false)"},
+				},
+				Required: []string{"owner", "repo", "run_id"},
+			},
+		},
+		{
+			Name:        "github_dismiss_dependabot_alert",
+			Description: "🛡️ Dismissar una alerta de seguridad de Dependabot",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":   {Type: "string", Description: "Propietario del repositorio"},
+					"repo":    {Type: "string", Description: "Nombre del repositorio"},
+					"number":  {Type: "number", Description: "Número de la alerta"},
+					"reason":  {Type: "string", Description: "Razón: fix_started, inaccurate, no_bandwidth, not_used, tolerable_risk"},
+					"comment": {Type: "string", Description: "Comentario explicando el dismissal (opcional)"},
+				},
+				Required: []string{"owner", "repo", "number", "reason"},
+			},
+		},
+		{
+			Name:        "github_dismiss_code_alert",
+			Description: "🔍 Dismissar una alerta de code scanning",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":   {Type: "string", Description: "Propietario del repositorio"},
+					"repo":    {Type: "string", Description: "Nombre del repositorio"},
+					"number":  {Type: "number", Description: "Número de la alerta"},
+					"reason":  {Type: "string", Description: "Razón: false positive, won't fix, used in tests"},
+					"comment": {Type: "string", Description: "Comentario explicando el dismissal (opcional)"},
+				},
+				Required: []string{"owner", "repo", "number", "reason"},
+			},
+		},
+		{
+			Name:        "github_dismiss_secret_alert",
+			Description: "🔑 Dismissar una alerta de secret scanning",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":      {Type: "string", Description: "Propietario del repositorio"},
+					"repo":       {Type: "string", Description: "Nombre del repositorio"},
+					"number":     {Type: "number", Description: "Número de la alerta"},
+					"resolution": {Type: "string", Description: "Resolución: false_positive, wont_fix, revoked, used_in_tests"},
+				},
+				Required: []string{"owner", "repo", "number", "resolution"},
+			},
+		},
 	}
 
 	return types.ToolsListResult{Tools: tools}
@@ -1044,6 +1176,146 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 			} else {
 				text = fmt.Sprintf("✅ Notificación %s marcada como leída", threadID)
 			}
+		}
+
+	// === RESPONSE TOOLS ===
+	case "github_comment_issue":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int(arguments["number"].(float64))
+		body, _ := arguments["body"].(string)
+
+		comment, commentErr := s.GithubClient.CreateIssueComment(ctx, owner, repo, number, body)
+		if commentErr != nil {
+			err = commentErr
+		} else {
+			text = fmt.Sprintf("✅ Comentario agregado a issue #%d\n🔗 %s", number, comment.GetHTMLURL())
+		}
+
+	case "github_comment_pr":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int(arguments["number"].(float64))
+		body, _ := arguments["body"].(string)
+
+		comment, commentErr := s.GithubClient.CreatePRComment(ctx, owner, repo, number, body)
+		if commentErr != nil {
+			err = commentErr
+		} else {
+			text = fmt.Sprintf("✅ Comentario agregado a PR #%d\n🔗 %s", number, comment.GetHTMLURL())
+		}
+
+	case "github_review_pr":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int(arguments["number"].(float64))
+		event, _ := arguments["event"].(string)
+		body, _ := arguments["body"].(string)
+
+		review, reviewErr := s.GithubClient.CreatePRReview(ctx, owner, repo, number, event, body)
+		if reviewErr != nil {
+			err = reviewErr
+		} else {
+			var eventEmoji string
+			switch event {
+			case "APPROVE":
+				eventEmoji = "✅ Aprobado"
+			case "REQUEST_CHANGES":
+				eventEmoji = "🔴 Cambios solicitados"
+			default:
+				eventEmoji = "💬 Comentario"
+			}
+			text = fmt.Sprintf("%s PR #%d\n🔗 %s", eventEmoji, number, review.GetHTMLURL())
+		}
+
+	// === REPAIR TOOLS ===
+	case "github_close_issue":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int(arguments["number"].(float64))
+		comment, _ := arguments["comment"].(string)
+
+		issue, closeErr := s.GithubClient.CloseIssue(ctx, owner, repo, number, comment)
+		if closeErr != nil {
+			err = closeErr
+		} else {
+			text = fmt.Sprintf("🔒 Issue #%d cerrado\n🔗 %s", number, issue.GetHTMLURL())
+		}
+
+	case "github_merge_pr":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int(arguments["number"].(float64))
+		commitMessage, _ := arguments["commit_message"].(string)
+		mergeMethod, _ := arguments["merge_method"].(string)
+		if mergeMethod == "" {
+			mergeMethod = "merge"
+		}
+
+		result, mergeErr := s.GithubClient.MergePullRequest(ctx, owner, repo, number, commitMessage, mergeMethod)
+		if mergeErr != nil {
+			err = mergeErr
+		} else {
+			text = fmt.Sprintf("🔀 PR #%d mergeado exitosamente\n✅ Mergeado: %v\n📝 SHA: %s",
+				number, result.GetMerged(), result.GetSHA())
+		}
+
+	case "github_rerun_workflow":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		runID := int64(arguments["run_id"].(float64))
+		failedOnly, _ := arguments["failed_jobs_only"].(bool)
+
+		if failedOnly {
+			err = s.GithubClient.RerunFailedJobs(ctx, owner, repo, runID)
+			text = fmt.Sprintf("🔄 Re-ejecutando jobs fallidos para el workflow run %d", runID)
+		} else {
+			err = s.GithubClient.RerunWorkflow(ctx, owner, repo, runID)
+			text = fmt.Sprintf("🔄 Re-ejecutando workflow run completo %d", runID)
+		}
+
+	case "github_dismiss_dependabot_alert":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int(arguments["number"].(float64))
+		reason, _ := arguments["reason"].(string)
+		comment, _ := arguments["comment"].(string)
+
+		alert, dismissErr := s.GithubClient.DismissDependabotAlert(ctx, owner, repo, number, reason, comment)
+		if dismissErr != nil {
+			err = dismissErr
+		} else {
+			text = fmt.Sprintf("🛡️ Alerta Dependabot #%d dismissada (razón: %s)\n🔗 %s",
+				number, reason, alert.GetHTMLURL())
+		}
+
+	case "github_dismiss_code_alert":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int64(arguments["number"].(float64))
+		reason, _ := arguments["reason"].(string)
+		comment, _ := arguments["comment"].(string)
+
+		alert, dismissErr := s.GithubClient.DismissCodeScanningAlert(ctx, owner, repo, number, reason, comment)
+		if dismissErr != nil {
+			err = dismissErr
+		} else {
+			text = fmt.Sprintf("🔍 Alerta de code scanning #%d dismissada (razón: %s)\n🔗 %s",
+				number, reason, alert.GetHTMLURL())
+		}
+
+	case "github_dismiss_secret_alert":
+		owner, _ := arguments["owner"].(string)
+		repo, _ := arguments["repo"].(string)
+		number := int64(arguments["number"].(float64))
+		resolution, _ := arguments["resolution"].(string)
+
+		alert, dismissErr := s.GithubClient.DismissSecretScanningAlert(ctx, owner, repo, number, resolution)
+		if dismissErr != nil {
+			err = dismissErr
+		} else {
+			text = fmt.Sprintf("🔑 Alerta de secret scanning #%d resuelta (%s)\n🔗 %s",
+				number, resolution, alert.GetHTMLURL())
 		}
 
 	default:

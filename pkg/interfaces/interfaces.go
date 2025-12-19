@@ -76,4 +76,22 @@ type GitHubOperations interface {
 	CreatePullRequest(ctx context.Context, owner, repo, title, head, base, body string) (*github.PullRequest, error)
 	CreateFile(ctx context.Context, owner, repo, path, content, message, branch string) (*github.RepositoryContentResponse, error)
 	UpdateFile(ctx context.Context, owner, repo, path, content, message, sha, branch string) (*github.RepositoryContentResponse, error)
+
+	// Issue operations
+	CreateIssueComment(ctx context.Context, owner, repo string, number int, body string) (*github.IssueComment, error)
+	CloseIssue(ctx context.Context, owner, repo string, number int, comment string) (*github.Issue, error)
+
+	// Pull Request operations
+	CreatePRComment(ctx context.Context, owner, repo string, number int, body string) (*github.IssueComment, error)
+	CreatePRReview(ctx context.Context, owner, repo string, number int, event, body string) (*github.PullRequestReview, error)
+	MergePullRequest(ctx context.Context, owner, repo string, number int, commitMessage, mergeMethod string) (*github.PullRequestMergeResult, error)
+
+	// Workflow operations
+	RerunWorkflow(ctx context.Context, owner, repo string, runID int64) error
+	RerunFailedJobs(ctx context.Context, owner, repo string, runID int64) error
+
+	// Security alert operations
+	DismissDependabotAlert(ctx context.Context, owner, repo string, number int, reason, comment string) (*github.DependabotAlert, error)
+	DismissCodeScanningAlert(ctx context.Context, owner, repo string, number int64, reason, comment string) (*github.Alert, error)
+	DismissSecretScanningAlert(ctx context.Context, owner, repo string, number int64, resolution string) (*github.SecretScanningAlert, error)
 }
