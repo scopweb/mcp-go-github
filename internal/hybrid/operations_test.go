@@ -192,6 +192,38 @@ func (m *mockGitHubOperations) UpdateFile(ctx context.Context, owner, repo, path
 	return nil, errors.New("updateFileFunc not implemented")
 }
 
+// New methods for v2.1
+func (m *mockGitHubOperations) CreateIssueComment(_ context.Context, _ string, _ string, _ int, _ string) (*github.IssueComment, error) {
+	return nil, nil
+}
+func (m *mockGitHubOperations) CloseIssue(_ context.Context, _ string, _ string, _ int, _ string) (*github.Issue, error) {
+	return nil, nil
+}
+func (m *mockGitHubOperations) CreatePRComment(_ context.Context, _ string, _ string, _ int, _ string) (*github.IssueComment, error) {
+	return nil, nil
+}
+func (m *mockGitHubOperations) CreatePRReview(_ context.Context, _ string, _ string, _ int, _ string, _ string) (*github.PullRequestReview, error) {
+	return nil, nil
+}
+func (m *mockGitHubOperations) MergePullRequest(_ context.Context, _ string, _ string, _ int, _ string, _ string) (*github.PullRequestMergeResult, error) {
+	return nil, nil
+}
+func (m *mockGitHubOperations) RerunWorkflow(_ context.Context, _ string, _ string, _ int64) error {
+	return nil
+}
+func (m *mockGitHubOperations) RerunFailedJobs(_ context.Context, _ string, _ string, _ int64) error {
+	return nil
+}
+func (m *mockGitHubOperations) DismissDependabotAlert(_ context.Context, _ string, _ string, _ int, _ string, _ string) (*github.DependabotAlert, error) {
+	return nil, nil
+}
+func (m *mockGitHubOperations) DismissCodeScanningAlert(_ context.Context, _ string, _ string, _ int64, _ string, _ string) (*github.Alert, error) {
+	return nil, nil
+}
+func (m *mockGitHubOperations) DismissSecretScanningAlert(_ context.Context, _ string, _ string, _ int64, _ string) (*github.SecretScanningAlert, error) {
+	return nil, nil
+}
+
 // --- Tests ---
 
 func TestAutoDetectContext(t *testing.T) {

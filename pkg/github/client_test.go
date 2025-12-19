@@ -49,8 +49,10 @@ func (m *mockRepositoriesService) UpdateFile(ctx context.Context, owner, repo, p
 
 // mockPullRequestsService es una implementación simulada de PullRequestsService para pruebas.
 type mockPullRequestsService struct {
-	ListFunc   func(ctx context.Context, owner, repo string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
-	CreateFunc func(ctx context.Context, owner, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error)
+	ListFunc        func(ctx context.Context, owner, repo string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+	CreateFunc      func(ctx context.Context, owner, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error)
+	MergeFunc       func(ctx context.Context, owner, repo string, number int, commitMessage string, opts *github.PullRequestOptions) (*github.PullRequestMergeResult, *github.Response, error)
+	CreateReviewFunc func(ctx context.Context, owner, repo string, number int, review *github.PullRequestReviewRequest) (*github.PullRequestReview, *github.Response, error)
 }
 
 func (m *mockPullRequestsService) List(ctx context.Context, owner, repo string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
@@ -63,6 +65,20 @@ func (m *mockPullRequestsService) List(ctx context.Context, owner, repo string, 
 func (m *mockPullRequestsService) Create(ctx context.Context, owner, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error) {
 	if m.CreateFunc != nil {
 		return m.CreateFunc(ctx, owner, repo, pull)
+	}
+	return nil, nil, nil
+}
+
+func (m *mockPullRequestsService) Merge(ctx context.Context, owner, repo string, number int, commitMessage string, opts *github.PullRequestOptions) (*github.PullRequestMergeResult, *github.Response, error) {
+	if m.MergeFunc != nil {
+		return m.MergeFunc(ctx, owner, repo, number, commitMessage, opts)
+	}
+	return nil, nil, nil
+}
+
+func (m *mockPullRequestsService) CreateReview(ctx context.Context, owner, repo string, number int, review *github.PullRequestReviewRequest) (*github.PullRequestReview, *github.Response, error) {
+	if m.CreateReviewFunc != nil {
+		return m.CreateReviewFunc(ctx, owner, repo, number, review)
 	}
 	return nil, nil, nil
 }
