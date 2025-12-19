@@ -7,6 +7,37 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2.1.0-response-repair] - 2025-12-19
+
+### 🚀 Added
+- **10 nuevas herramientas MCP** para respuesta y reparación
+  - 3 herramientas de respuesta: comentar issues/PRs, crear reviews
+  - 6 herramientas de reparación: cerrar issues, mergear PRs, re-ejecutar workflows, dismissar alertas
+- Métodos `CreateIssueComment`, `CloseIssue` para gestión de issues
+- Métodos `CreatePRComment`, `CreatePRReview`, `MergePullRequest` para PRs
+- Métodos `RerunWorkflow`, `RerunFailedJobs` para GitHub Actions
+- Métodos `DismissDependabotAlert`, `DismissCodeScanningAlert`, `DismissSecretScanningAlert` para alertas de seguridad
+- 6 nuevas interfaces de servicio en client.go
+
+### 🔧 Changed
+- Extendida interfaz `GitHubOperations` con 11 nuevas firmas de método
+- Actualizado `Client` struct con 7 nuevos servicios GitHub
+
+### 🧪 Testing
+- Actualizados mocks en client_test.go con nuevos métodos
+- Actualizados mocks de hybrid operations para nuevas funcionalidades
+- Todos los tests pasan sin errores
+
+### 🎨 Code Quality
+- Implementados 11 nuevos métodos wrapper en pkg/github/client.go
+- Agregados 10 handlers MCP en internal/server/server.go
+- Código completamente formateado siguiendo estándares de Go
+
+### 📚 Documentation
+- CLAUDE.md actualizado (45+ → 55+ herramientas)
+- Documentación de nuevas herramientas de respuesta y reparación
+- Actualización de permisos de token recomendados
+
 ## [2.4.0] - 2025-01-02
 
 ### 🎨 Code Quality
@@ -185,7 +216,8 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Links de Comparación
 
-[Unreleased]: https://github.com/scopweb/mcp-go-github/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/scopweb/mcp-go-github/compare/v2.1.0-response-repair...HEAD
+[2.1.0-response-repair]: https://github.com/scopweb/mcp-go-github/compare/v2.4.0...v2.1.0-response-repair
 [2.4.0]: https://github.com/scopweb/mcp-go-github/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/scopweb/mcp-go-github/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/scopweb/mcp-go-github/compare/v2.2.0...v2.2.1
