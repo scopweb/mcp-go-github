@@ -1,13 +1,13 @@
 module github.com/jotajotape/github-go-server-mcp
 
-go 1.24.0
+go 1.25.0
 
-toolchain go1.24.6
+toolchain go1.25.6
 
 require (
-	github.com/google/go-github/v77 v77.0.0
+	github.com/google/go-github/v81 v81.0.0
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/oauth2 v0.34.0
 )
 
 require (

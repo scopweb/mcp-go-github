@@ -7,6 +7,19 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-01-27
+
+### 🔄 Updated
+- **Go**: 1.24.0 → 1.25.0 (toolchain go1.25.6)
+- **go-github**: v77.0.0 → v81.0.0 (4 major versions, latest stable)
+- **oauth2**: v0.33.0 → v0.34.0
+- Directorio vendor sincronizado con nuevas dependencias
+- Import paths actualizados en todos los archivos Go del proyecto
+
+### 🧪 Testing
+- Todos los tests pasan exitosamente con las nuevas dependencias
+- Build exitoso sin errores de compilación
+
 ## [2.1.0-response-repair] - 2025-12-19
 
 ### 🚀 Added
@@ -216,7 +229,8 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Links de Comparación
 
-[Unreleased]: https://github.com/scopweb/mcp-go-github/compare/v2.1.0-response-repair...HEAD
+[Unreleased]: https://github.com/scopweb/mcp-go-github/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/scopweb/mcp-go-github/compare/v2.1.0-response-repair...v2.5.0
 [2.1.0-response-repair]: https://github.com/scopweb/mcp-go-github/compare/v2.4.0...v2.1.0-response-repair
 [2.4.0]: https://github.com/scopweb/mcp-go-github/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/scopweb/mcp-go-github/compare/v2.2.1...v2.3.0

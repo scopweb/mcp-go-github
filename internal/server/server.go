@@ -56,7 +56,7 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "github-mcp-local-hybrid",
-				"version": "2.0.0",
+				"version": "2.5.0",
 			},
 		}
 	case "initialized":

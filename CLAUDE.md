@@ -32,9 +32,9 @@ go test ./pkg/git/ -v           # Test specific package
 ```
 
 ## Dependencies
-- Go 1.24.0+
-- `github.com/google/go-github/v77 v77.0.0`
-- `golang.org/x/oauth2 v0.33.0`
+- Go 1.25.0+
+- `github.com/google/go-github/v81 v81.0.0`
+- `golang.org/x/oauth2 v0.34.0`
 
 ## Available Tools (55+)
 
