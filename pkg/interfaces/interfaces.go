@@ -95,3 +95,40 @@ type GitHubOperations interface {
 	DismissCodeScanningAlert(ctx context.Context, owner, repo string, number int64, reason, comment string) (*github.Alert, error)
 	DismissSecretScanningAlert(ctx context.Context, owner, repo string, number int64, resolution string) (*github.SecretScanningAlert, error)
 }
+
+// AdminOperations define la interfaz para operaciones administrativas de GitHub (v3.0)
+type AdminOperations interface {
+	// Repository Settings
+	GetRepositorySettings(ctx context.Context, owner, repo string) (*github.Repository, error)
+	UpdateRepositorySettings(ctx context.Context, owner, repo string, settings map[string]interface{}) (*github.Repository, error)
+	ArchiveRepository(ctx context.Context, owner, repo string) (*github.Repository, error)
+	DeleteRepository(ctx context.Context, owner, repo string) error
+
+	// Branch Protection
+	GetBranchProtection(ctx context.Context, owner, repo, branch string) (*github.Protection, error)
+	UpdateBranchProtection(ctx context.Context, owner, repo, branch string, protection *github.ProtectionRequest) (*github.Protection, error)
+	DeleteBranchProtection(ctx context.Context, owner, repo, branch string) error
+
+	// Webhooks
+	ListWebhooks(ctx context.Context, owner, repo string) ([]*github.Hook, error)
+	CreateWebhook(ctx context.Context, owner, repo string, config map[string]interface{}) (*github.Hook, error)
+	UpdateWebhook(ctx context.Context, owner, repo string, hookID int64, config map[string]interface{}) (*github.Hook, error)
+	DeleteWebhook(ctx context.Context, owner, repo string, hookID int64) error
+	TestWebhook(ctx context.Context, owner, repo string, hookID int64) error
+
+	// Collaborators
+	ListCollaborators(ctx context.Context, owner, repo string) ([]*github.User, error)
+	AddCollaborator(ctx context.Context, owner, repo, username, permission string) (*github.CollaboratorInvitation, error)
+	UpdateCollaboratorPermission(ctx context.Context, owner, repo, username, permission string) (*github.CollaboratorInvitation, error)
+	RemoveCollaborator(ctx context.Context, owner, repo, username string) error
+	CheckCollaborator(ctx context.Context, owner, repo, username string) (bool, error)
+
+	// Repository Invitations
+	ListInvitations(ctx context.Context, owner, repo string) ([]*github.RepositoryInvitation, error)
+	AcceptInvitation(ctx context.Context, invitationID int64) error
+	CancelInvitation(ctx context.Context, owner, repo string, invitationID int64) error
+
+	// Team Access
+	ListRepositoryTeams(ctx context.Context, owner, repo string) ([]*github.Team, error)
+	AddRepositoryTeam(ctx context.Context, owner, repo string, teamID int64, permission string) error
+}
