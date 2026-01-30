@@ -9,6 +9,7 @@
 /github-mcp-modular.exe
 /github-mcp.exe
 /mcp-go-github-modular.exe
+/github-mcp-server-v3.exe
 github-mcp-modular.exe~
 
 # Go specific
@@ -33,6 +34,12 @@ Thumbs.db
 *.tmp
 *.log
 *.bak
+
+# v3.0 Safety & Audit
+mcp-admin-audit.log*
+safety.json
+token_check.txt
+coverage.out
 
 # Development docs (not needed in repo)
 CONVERSATION.md
