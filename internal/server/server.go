@@ -17,6 +17,8 @@ import (
 type MCPServer struct {
 	GithubClient interfaces.GitHubOperations
 	GitClient    interfaces.GitOperations
+	AdminClient  interfaces.AdminOperations  // v3.0: Administrative operations
+	Safety       *SafetyMiddleware            // v3.0: Safety filter middleware
 }
 
 // HandleRequest procesa las peticiones JSON-RPC del protocolo MCP
@@ -55,8 +57,8 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 				"tools": map[string]interface{}{},
 			},
 			"serverInfo": map[string]interface{}{
-				"name":    "github-mcp-local-hybrid",
-				"version": "2.5.0",
+				"name":    "github-mcp-admin-v3",
+				"version": "3.0.0",
 			},
 		}
 	case "initialized":
@@ -756,6 +758,10 @@ func ListTools() types.ToolsListResult {
 		},
 	}
 
+	// Add administrative tools (v3.0)
+	adminTools := ListAdminTools()
+	tools = append(tools, adminTools...)
+
 	return types.ToolsListResult{Tools: tools}
 }
 
@@ -1319,6 +1325,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		}
 
 	default:
+		// Check if it's an administrative tool (v3.0)
+		if IsAdminOperation(name) {
+			return HandleAdminTool(s, name, arguments)
+		}
 		return types.ToolCallResult{}, fmt.Errorf("tool not found")
 	}
 
