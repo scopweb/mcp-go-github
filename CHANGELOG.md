@@ -7,6 +7,85 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-01-31
+
+### 🚀 Added
+
+#### Administrative Controls (22 new tools)
+- **Repository Settings** (4 tools): `github_get_repo_settings`, `github_update_repo_settings`, `github_archive_repository`, `github_delete_repository`
+- **Branch Protection** (3 tools): `github_get_branch_protection`, `github_update_branch_protection`, `github_delete_branch_protection`
+- **Webhooks** (5 tools): `github_list_webhooks`, `github_create_webhook`, `github_update_webhook`, `github_delete_webhook`, `github_test_webhook`
+- **Collaborators** (8 tools): `github_list_collaborators`, `github_check_collaborator`, `github_add_collaborator`, `github_update_collaborator_permission`, `github_remove_collaborator`, `github_list_invitations`, `github_accept_invitation`, `github_cancel_invitation`
+- **Teams** (2 tools): `github_list_repo_teams`, `github_add_repo_team`
+
+#### 4-Tier Safety System
+- Clasificación de riesgo en 4 niveles: LOW, MEDIUM, HIGH, CRITICAL
+- 4 modos de seguridad: strict, moderate (default), permissive, disabled
+- Tokens de confirmación SHA256 de un solo uso con expiración de 5 minutos
+- Validación de parámetros contra path traversal, command injection y SSRF
+- Modo dry-run para previsualizar operaciones destructivas
+- Configuración externa vía `safety.json` (opcional, usa defaults si no existe)
+
+#### Audit Logging
+- Registro JSON de todas las operaciones administrativas
+- Timestamps, detalles de operación y comandos de rollback
+- Rotación automática de logs (10MB max, 5 backups)
+- Path configurable vía `safety.json`
+
+#### Git-Free File Operations (4 new tools)
+- `github_list_repo_contents`: Listar archivos y directorios vía API
+- `github_download_file`: Descargar archivo individual desde repositorio
+- `github_download_repo`: Clonar repositorio completo vía API (sin Git)
+- `github_pull_repo`: Actualizar directorio local desde repositorio vía API
+
+#### Git Availability Detection
+- Detección automática de Git en el sistema vía `exec.LookPath`
+- Filtrado dinámico de herramientas: 82 con Git, 48 sin Git
+- Mensaje de error amigable cuando se intenta usar herramientas Git sin Git instalado
+- Todas las herramientas API y administrativas funcionan sin Git
+
+### 🔧 Changed
+- Expandida interfaz `AdminOperations` con 22 métodos administrativos
+- `MCPServer` struct ampliado con `AdminClient`, `Safety`, `GitAvailable`, `RawGitHubClient`
+- `ListTools()` ahora acepta parámetro `gitAvailable` para filtrado dinámico
+- `CallTool()` integra safety middleware para operaciones administrativas
+- Herramientas totales: 55+ → 82 (con Git) / 48 (sin Git)
+
+### 🛡️ Security
+- Sistema de confirmación obligatoria para operaciones HIGH y CRITICAL
+- Tokens criptográficos SHA256 con prefijo `CONF:` y expiración de 5 minutos
+- Prevención de SSRF en URLs de webhooks (bloqueo de IPs privadas)
+- Validación estricta de permisos: pull, triage, push, maintain, admin
+- Backup automático recomendado antes de operaciones CRITICAL
+
+### 🧪 Testing
+- Probadas todas las operaciones con repositorio real (debloga/deblota-temp)
+- Verificados los 4 niveles de riesgo con mensajes apropiados
+- Tokens de confirmación generados y validados correctamente
+- Modo sin Git verificado en entorno simulado
+- Operaciones de archivo (clone/pull via API) probadas end-to-end
+
+### 📚 Documentation
+- CLAUDE.md actualizado con documentación completa de v3.0
+- Creado `safety.json.example` con configuración de referencia
+- CHANGELOG.md actualizado con todos los cambios de v3.0
+- README.md actualizado con nuevas herramientas y configuración
+
+### New Files
+- `pkg/admin/admin.go` - Cliente administrativo con 22 métodos
+- `pkg/safety/safety.go` - Motor principal de seguridad
+- `pkg/safety/risk_classifier.go` - Clasificación de riesgo (4 niveles)
+- `pkg/safety/confirmation.go` - Sistema de tokens de confirmación
+- `pkg/safety/validators.go` - Validación de parámetros
+- `pkg/safety/audit.go` - Registro de auditoría JSON
+- `pkg/config/config.go` - Carga de configuración safety.json
+- `internal/server/admin_tools.go` - 22 definiciones de herramientas admin
+- `internal/server/admin_handlers.go` - 22 handlers administrativos
+- `internal/server/safety_middleware.go` - Middleware de seguridad
+- `internal/server/file_tools.go` - 4 definiciones de herramientas de archivo
+- `internal/server/file_handlers.go` - 4 handlers de operaciones de archivo
+- `safety.json.example` - Plantilla de configuración de seguridad
+
 ## [2.5.0] - 2026-01-27
 
 ### 🔄 Updated
@@ -229,7 +308,8 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Links de Comparación
 
-[Unreleased]: https://github.com/scopweb/mcp-go-github/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/scopweb/mcp-go-github/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/scopweb/mcp-go-github/compare/v2.5.0...v3.0.0
 [2.5.0]: https://github.com/scopweb/mcp-go-github/compare/v2.1.0-response-repair...v2.5.0
 [2.1.0-response-repair]: https://github.com/scopweb/mcp-go-github/compare/v2.4.0...v2.1.0-response-repair
 [2.4.0]: https://github.com/scopweb/mcp-go-github/compare/v2.3.0...v2.4.0

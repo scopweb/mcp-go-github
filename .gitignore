@@ -10,7 +10,9 @@
 /github-mcp.exe
 /mcp-go-github-modular.exe
 /github-mcp-server-v3.exe
+/github-mcp-server-v3
 github-mcp-modular.exe~
+dist/
 
 # Go specific
 # vendor/ - Incluimos vendor para builds reproducibles

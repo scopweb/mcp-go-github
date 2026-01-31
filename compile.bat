@@ -1,40 +1,42 @@
 @echo off
-echo 🚀 Compilando GitHub MCP Server...
+echo ============================================
+echo   GitHub MCP Server v3.0 - Build (Windows)
+echo ============================================
 echo.
 
-REM Cambiar al directorio del proyecto
 cd /d "C:\MCPs\clone\mcp-go-github"
 
-REM Verificar Go
+REM Verify Go
 go version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ Go no está instalado
+    echo [ERROR] Go is not installed
     exit /b 1
 )
 
-REM Limpiar módulo
-echo 📦 Limpiando dependencias...
+echo [1/3] Cleaning dependencies...
 go mod tidy
 
-REM Compilar
-echo 🔧 Compilando...
-go build -o mcp-go-github-modular.exe ./cmd/github-mcp-server/main.go
+echo [2/3] Compiling for Windows...
+go build -ldflags="-s -w" -o github-mcp-server-v3.exe ./cmd/github-mcp-server/main.go
 if %errorlevel% neq 0 (
-    echo ❌ Error de compilación
+    echo [ERROR] Compilation failed
     exit /b 1
 )
 
-echo ✅ Compilación exitosa: mcp-go-github-modular.exe
+echo [3/3] Verifying build...
+github-mcp-server-v3.exe --help >nul 2>&1
 echo.
-echo 💡 Características v2.0:
-echo - ✅ Soporte multi-perfil
-echo - ✅ Sistema híbrido Git local + GitHub API  
-echo - ✅ 15+ herramientas disponibles
-echo - ✅ Logs informativos con emojis
+echo ============================================
+echo   Build successful: github-mcp-server-v3.exe
+echo ============================================
 echo.
-echo 🎯 Para usar:
-echo   1. Configurar token(s) en Claude Desktop
-echo   2. Usar --profile nombre para diferenciar instancias
-echo   3. Reiniciar Claude Desktop
+echo   v3.0 Features:
+echo   - 82 tools (48 without Git)
+echo   - 22 admin tools with safety system
+echo   - 4 file operations (no Git required)
+echo   - Git auto-detection
+echo   - Multi-profile support
+echo.
+echo   To build for Mac: build-mac.bat
 echo.
 pause
