@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	ghclient "github.com/google/go-github/v81/github"
 	"golang.org/x/oauth2"
@@ -26,6 +27,14 @@ func main() {
 
 	if *profile != "" {
 		log.Printf("Starting MCP server with profile: %s", *profile)
+	}
+
+	// Detectar disponibilidad de Git
+	gitAvailable := false
+	if _, lookErr := exec.LookPath("git"); lookErr == nil {
+		gitAvailable = true
+	} else {
+		log.Printf("Git not found: %v. Git tools will be disabled, API tools remain available.", lookErr)
 	}
 
 	// Inicializar cliente Git
@@ -65,10 +74,12 @@ func main() {
 
 	// Crear servidor MCP
 	mcpServer := &server.MCPServer{
-		GithubClient: wrappedGithubClient,
-		GitClient:    gitClient,
-		AdminClient:  adminClient,
-		Safety:       safetyMiddleware,
+		GithubClient:    wrappedGithubClient,
+		GitClient:       gitClient,
+		AdminClient:     adminClient,
+		Safety:          safetyMiddleware,
+		GitAvailable:    gitAvailable,
+		RawGitHubClient: &githubClient,
 	}
 
 	// Leer solicitudes JSON-RPC del stdin
