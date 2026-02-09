@@ -62,7 +62,7 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "github-mcp-admin-v3",
-				"version": "3.0.0",
+				"version": "3.0.1",
 			},
 		}
 	case "initialized":
