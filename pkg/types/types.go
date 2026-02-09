@@ -41,9 +41,11 @@ type JSONRPCError struct {
 
 // Estructuras MCP para herramientas
 type Tool struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	InputSchema ToolInputSchema `json:"inputSchema"`
+	Name        string                 `json:"name"`
+	Title       string                 `json:"title,omitempty"`
+	Description string                 `json:"description"`
+	InputSchema ToolInputSchema        `json:"inputSchema"`
+	Annotations map[string]interface{} `json:"annotations,omitempty"`
 }
 
 type ToolInputSchema struct {

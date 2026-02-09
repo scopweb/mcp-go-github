@@ -10,7 +10,9 @@ func ListAdminTools() []types.Tool {
 		// ========================================================================
 		{
 			Name:        "github_get_repo_settings",
+			Title:       "Get Repository Settings",
 			Description: "📋 View repository configuration and settings",
+			Annotations: ReadOnlyAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -22,7 +24,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_update_repo_settings",
+			Title:       "Update Repository Settings",
 			Description: "⚙️ Modify repository configuration (name, description, visibility, features)",
+			Annotations: ModifyingAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -47,7 +51,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_archive_repository",
+			Title:       "Archive Repository",
 			Description: "📦 Archive repository (makes it read-only) - CRITICAL operation",
+			Annotations: DestructiveAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -60,7 +66,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_delete_repository",
+			Title:       "Delete Repository",
 			Description: "💣 Delete repository PERMANENTLY - CRITICAL operation",
+			Annotations: DestructiveAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -77,7 +85,9 @@ func ListAdminTools() []types.Tool {
 		// ========================================================================
 		{
 			Name:        "github_get_branch_protection",
+			Title:       "Get Branch Protection",
 			Description: "🛡️ View branch protection rules",
+			Annotations: ReadOnlyAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -90,7 +100,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_update_branch_protection",
+			Title:       "Update Branch Protection",
 			Description: "🔒 Configure branch protection rules (requires reviews, status checks, etc.)",
+			Annotations: ModifyingAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -111,7 +123,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_delete_branch_protection",
+			Title:       "Delete Branch Protection",
 			Description: "⚠️ Remove branch protection - CRITICAL operation",
+			Annotations: DestructiveAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -129,7 +143,9 @@ func ListAdminTools() []types.Tool {
 		// ========================================================================
 		{
 			Name:        "github_list_webhooks",
+			Title:       "List Webhooks",
 			Description: "📡 List all repository webhooks",
+			Annotations: ReadOnlyAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -141,7 +157,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_create_webhook",
+			Title:       "Create Webhook",
 			Description: "➕ Create new repository webhook",
+			Annotations: CombineAnnotations(ModifyingAnnotation(), OpenWorldAnnotation()),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -159,7 +177,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_update_webhook",
+			Title:       "Update Webhook",
 			Description: "✏️ Modify existing webhook configuration",
+			Annotations: CombineAnnotations(ModifyingAnnotation(), OpenWorldAnnotation()),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -178,7 +198,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_delete_webhook",
+			Title:       "Delete Webhook",
 			Description: "🗑️ Delete webhook (breaks integrations) - HIGH RISK",
+			Annotations: DestructiveAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -192,7 +214,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_test_webhook",
+			Title:       "Test Webhook",
 			Description: "🧪 Trigger webhook test delivery",
+			Annotations: CombineAnnotations(ReadOnlyAnnotation(), OpenWorldAnnotation()),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -209,7 +233,9 @@ func ListAdminTools() []types.Tool {
 		// ========================================================================
 		{
 			Name:        "github_list_collaborators",
+			Title:       "List Collaborators",
 			Description: "👥 List all repository collaborators",
+			Annotations: ReadOnlyAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -220,8 +246,25 @@ func ListAdminTools() []types.Tool {
 			},
 		},
 		{
+			Name:        "github_check_collaborator",
+			Title:       "Check Collaborator",
+			Description: "✅ Check if user is a collaborator",
+			Annotations: ReadOnlyAnnotation(),
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"owner":    {Type: "string", Description: "Repository owner"},
+					"repo":     {Type: "string", Description: "Repository name"},
+					"username": {Type: "string", Description: "GitHub username to check"},
+				},
+				Required: []string{"owner", "repo", "username"},
+			},
+		},
+		{
 			Name:        "github_add_collaborator",
+			Title:       "Add Collaborator",
 			Description: "🤝 Invite user as collaborator with specific permissions",
+			Annotations: ModifyingAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -236,7 +279,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_update_collaborator_permission",
+			Title:       "Update Collaborator Permission",
 			Description: "🔄 Change collaborator's permission level",
+			Annotations: ModifyingAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -251,7 +296,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_remove_collaborator",
+			Title:       "Remove Collaborator",
 			Description: "❌ Remove collaborator access - HIGH RISK",
+			Annotations: DestructiveAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -264,21 +311,10 @@ func ListAdminTools() []types.Tool {
 			},
 		},
 		{
-			Name:        "github_check_collaborator",
-			Description: "✅ Check if user is a collaborator",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"owner":    {Type: "string", Description: "Repository owner"},
-					"repo":     {Type: "string", Description: "Repository name"},
-					"username": {Type: "string", Description: "GitHub username to check"},
-				},
-				Required: []string{"owner", "repo", "username"},
-			},
-		},
-		{
 			Name:        "github_list_invitations",
+			Title:       "List Invitations",
 			Description: "📨 List pending repository invitations",
+			Annotations: ReadOnlyAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -290,7 +326,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_accept_invitation",
+			Title:       "Accept Invitation",
 			Description: "✔️ Accept repository invitation",
+			Annotations: ModifyingAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -301,7 +339,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_cancel_invitation",
+			Title:       "Cancel Invitation",
 			Description: "✖️ Cancel pending invitation",
+			Annotations: ModifyingAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -319,7 +359,9 @@ func ListAdminTools() []types.Tool {
 		// ========================================================================
 		{
 			Name:        "github_list_repo_teams",
+			Title:       "List Repository Teams",
 			Description: "🏢 List teams with access to repository",
+			Annotations: ReadOnlyAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
@@ -331,7 +373,9 @@ func ListAdminTools() []types.Tool {
 		},
 		{
 			Name:        "github_add_repo_team",
+			Title:       "Add Repository Team",
 			Description: "➕ Grant team access to repository",
+			Annotations: ModifyingAnnotation(),
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
