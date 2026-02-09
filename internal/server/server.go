@@ -54,9 +54,11 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 	switch req.Method {
 	case "initialize":
 		response.Result = map[string]interface{}{
-			"protocolVersion": "2024-11-05",
+			"protocolVersion": "2025-11-25",
 			"capabilities": map[string]interface{}{
-				"tools": map[string]interface{}{},
+				"tools": map[string]interface{}{
+					"listChanged": true,
+				},
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "github-mcp-admin-v3",
