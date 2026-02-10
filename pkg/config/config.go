@@ -123,6 +123,22 @@ func convertToSafetyConfig(cfg *Config) (*safety.SafetyConfig, error) {
 	return safetyConfig, nil
 }
 
+// riskLevelToString converts safety.RiskLevel to lowercase string
+func riskLevelToString(level safety.RiskLevel) string {
+	switch level {
+	case safety.RiskLow:
+		return "low"
+	case safety.RiskMedium:
+		return "medium"
+	case safety.RiskHigh:
+		return "high"
+	case safety.RiskCritical:
+		return "critical"
+	default:
+		return "high"
+	}
+}
+
 // parseRiskLevel converts string risk level to safety.RiskLevel
 func parseRiskLevel(level string) (safety.RiskLevel, error) {
 	switch level {
@@ -148,7 +164,7 @@ func SaveConfig(configPath string, safetyConfig *safety.SafetyConfig) error {
 		GlobalSettings: GlobalSettings{
 			EnableAuditLog:           safetyConfig.EnableAuditLog,
 			AuditLogPath:             safetyConfig.AuditLogPath,
-			RequireConfirmationAbove: safetyConfig.RequireConfirmationAbove.String(),
+			RequireConfirmationAbove: riskLevelToString(safetyConfig.RequireConfirmationAbove),
 			EnableAutoBackup:         safetyConfig.EnableAutoBackup,
 			BackupPath:               safetyConfig.BackupPath,
 		},

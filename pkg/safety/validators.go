@@ -90,15 +90,15 @@ func validateOwnerOrRepo(param string, value interface{}) error {
 		return &ValidationError{param, value, "cannot be empty"}
 	}
 
+	// Check for path traversal attempts FIRST (before regex)
+	if strings.Contains(str, "..") || strings.Contains(str, "/") || strings.Contains(str, "\\") {
+		return &ValidationError{param, value, "path traversal attempt detected"}
+	}
+
 	// GitHub allows alphanumeric, hyphens, and underscores
 	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, str)
 	if !matched {
 		return &ValidationError{param, value, "invalid format (allowed: letters, numbers, hyphens, underscores)"}
-	}
-
-	// Check for path traversal attempts
-	if strings.Contains(str, "..") || strings.Contains(str, "/") || strings.Contains(str, "\\") {
-		return &ValidationError{param, value, "path traversal attempt detected"}
 	}
 
 	if len(str) > 100 {
