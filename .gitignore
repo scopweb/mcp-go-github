@@ -51,3 +51,6 @@ ejemplos_github_repositorios/
 
 # Test artifacts
 test_mcp.go
+
+# Claude Code local configuration
+.claude/
