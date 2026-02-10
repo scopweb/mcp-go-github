@@ -1,0 +1,107 @@
+{
+  "_comment": "MCP GitHub Server v3.0 - Safety Configuration",
+  "_documentation": "https://github.com/jotajotape/github-go-server-mcp",
+
+  "mode": "moderate",
+  "_mode_options": ["strict", "moderate", "permissive", "disabled"],
+  "_mode_description": {
+    "strict": "Maximum safety - requires confirmation for all MEDIUM+ operations, enables all validations",
+    "moderate": "Balanced safety - requires confirmation for HIGH+ operations, standard validations (recommended)",
+    "permissive": "Minimal safety - only confirms CRITICAL operations, lighter validations",
+    "disabled": "No safety checks - all operations execute immediately (⚠️ NOT RECOMMENDED)"
+  },
+
+  "enable_audit_log": true,
+  "_audit_description": "Logs all administrative operations to mcp-admin-audit.log with automatic rotation",
+
+  "require_confirmation_above": 3,
+  "_confirmation_levels": {
+    "1": "LOW - Read-only operations (never require confirmation)",
+    "2": "MEDIUM - Reversible changes (add collaborator, create webhook)",
+    "3": "HIGH - Impacts collaboration (remove collaborator, delete webhook)",
+    "4": "CRITICAL - Irreversible or high security (delete repository, archive)"
+  },
+  "_confirmation_description": "Operations at or above this risk level require confirmation tokens",
+
+  "enable_auto_backup": false,
+  "_backup_description": "Automatically create backups before destructive operations (planned for future release)",
+
+  "audit_log_path": "./mcp-admin-audit.log",
+  "_audit_path_description": "Path to audit log file (relative or absolute)",
+
+  "audit_log_max_size_mb": 10,
+  "_audit_max_size_description": "Maximum size of audit log before rotation (in megabytes)",
+
+  "audit_log_max_backups": 5,
+  "_audit_backups_description": "Number of rotated log files to keep",
+
+  "_examples": {
+    "strict_mode": {
+      "mode": "strict",
+      "enable_audit_log": true,
+      "require_confirmation_above": 2,
+      "enable_auto_backup": true
+    },
+    "development_mode": {
+      "mode": "permissive",
+      "enable_audit_log": true,
+      "require_confirmation_above": 4,
+      "enable_auto_backup": false
+    },
+    "production_mode": {
+      "mode": "moderate",
+      "enable_audit_log": true,
+      "require_confirmation_above": 3,
+      "enable_auto_backup": true
+    }
+  },
+
+  "_operations_by_risk_level": {
+    "LOW (1)": [
+      "github_get_repo_settings",
+      "github_get_branch_protection",
+      "github_list_webhooks",
+      "github_list_collaborators",
+      "github_check_collaborator",
+      "github_test_webhook",
+      "github_list_invitations",
+      "github_list_repo_teams"
+    ],
+    "MEDIUM (2)": [
+      "github_update_repo_settings",
+      "github_create_webhook",
+      "github_update_webhook",
+      "github_add_collaborator",
+      "github_update_collaborator_permission",
+      "github_accept_invitation",
+      "github_cancel_invitation",
+      "github_add_repo_team"
+    ],
+    "HIGH (3)": [
+      "github_update_branch_protection",
+      "github_delete_webhook",
+      "github_remove_collaborator"
+    ],
+    "CRITICAL (4)": [
+      "github_archive_repository",
+      "github_delete_repository",
+      "github_delete_branch_protection"
+    ]
+  },
+
+  "_security_features": {
+    "parameter_validation": "Validates all operation parameters (owner, repo, username, etc.)",
+    "path_traversal_prevention": "Blocks attempts to use '..' or '/' in repository/owner names",
+    "command_injection_protection": "Prevents shell metacharacters in parameters",
+    "ssrf_prevention": "Validates webhook URLs to prevent localhost/private IP access",
+    "confirmation_tokens": "Single-use SHA256 tokens with 5-minute expiration for high-risk operations",
+    "audit_trail": "JSON logs with timestamps, operation details, and rollback commands",
+    "dry_run_mode": "Preview operations before execution (default for destructive actions)"
+  },
+
+  "_usage": {
+    "placement": "Copy this file to 'safety.json' in the same directory as github-mcp-server-v3.exe",
+    "override": "You can override the path using the --safety-config flag",
+    "defaults": "If no config file exists, the server uses moderate mode with audit logging enabled"
+  }
+}

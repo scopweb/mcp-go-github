@@ -15,8 +15,12 @@ import (
 
 // MCPServer representa el servidor MCP principal
 type MCPServer struct {
-	GithubClient interfaces.GitHubOperations
-	GitClient    interfaces.GitOperations
+	GithubClient   interfaces.GitHubOperations
+	GitClient      interfaces.GitOperations
+	AdminClient    interfaces.AdminOperations  // v3.0: Administrative operations
+	Safety         *SafetyMiddleware            // v3.0: Safety filter middleware
+	GitAvailable   bool                         // v3.0: Whether git binary is installed
+	RawGitHubClient interface{}                 // v3.0: Raw *github.Client for file operations
 }
 
 // HandleRequest procesa las peticiones JSON-RPC del protocolo MCP
@@ -50,19 +54,21 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 	switch req.Method {
 	case "initialize":
 		response.Result = map[string]interface{}{
-			"protocolVersion": "2024-11-05",
+			"protocolVersion": "2025-11-25",
 			"capabilities": map[string]interface{}{
-				"tools": map[string]interface{}{},
+				"tools": map[string]interface{}{
+					"listChanged": true,
+				},
 			},
 			"serverInfo": map[string]interface{}{
-				"name":    "github-mcp-local-hybrid",
-				"version": "2.5.0",
+				"name":    "github-mcp-admin-v3",
+				"version": "3.0.1",
 			},
 		}
 	case "initialized":
 		response.Result = map[string]interface{}{}
 	case "tools/list":
-		response.Result = ListTools()
+		response.Result = ListTools(s.GitAvailable)
 	case "tools/call":
 		result, err := CallTool(s, req.Params)
 		if err != nil {
@@ -83,9 +89,14 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 	return response
 }
 
+// isGitTool returns true if the tool requires local Git binary
+func isGitTool(name string) bool {
+	return strings.HasPrefix(name, "git_")
+}
+
 // ListTools retorna la lista de herramientas disponibles
-func ListTools() types.ToolsListResult {
-	tools := []types.Tool{
+func ListTools(gitAvailable bool) types.ToolsListResult {
+	allTools := []types.Tool{
 		// Herramientas de información
 		{
 			Name:        "git_status",
@@ -756,7 +767,26 @@ func ListTools() types.ToolsListResult {
 		},
 	}
 
-	return types.ToolsListResult{Tools: tools}
+	// Add administrative tools (v3.0)
+	adminTools := ListAdminTools()
+	allTools = append(allTools, adminTools...)
+
+	// Add file operation tools (v3.0 - work without Git)
+	fileTools := ListFileTools()
+	allTools = append(allTools, fileTools...)
+
+	// Filter out Git tools if Git is not available
+	if !gitAvailable {
+		var filtered []types.Tool
+		for _, tool := range allTools {
+			if !isGitTool(tool.Name) {
+				filtered = append(filtered, tool)
+			}
+		}
+		return types.ToolsListResult{Tools: filtered}
+	}
+
+	return types.ToolsListResult{Tools: allTools}
 }
 
 // CallTool ejecuta la herramienta solicitada
@@ -774,6 +804,13 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 	ctx := context.Background()
 	var text string
 	var err error
+
+	// Check if Git tool is called without Git installed
+	if isGitTool(name) && !s.GitAvailable {
+		return types.ToolCallResult{
+			Content: []types.Content{{Type: "text", Text: fmt.Sprintf("⚠️ Git is not installed on this system.\n\nThe tool '%s' requires a local Git binary.\n\nAlternatives:\n• Use GitHub API tools (github_*) which work without Git\n• Install Git: https://git-scm.com/downloads\n\nAvailable without Git: dashboard, repos, PRs, issues, webhooks, collaborators, branch protection, and all admin tools.", name)}},
+		}, nil
+	}
 
 	switch name {
 	// Herramientas Git básicas
@@ -1319,6 +1356,14 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		}
 
 	default:
+		// Check if it's an administrative tool (v3.0)
+		if IsAdminOperation(name) {
+			return HandleAdminTool(s, name, arguments)
+		}
+		// Check if it's a file operation tool (v3.0 - no Git required)
+		if IsFileOperation(name) {
+			return HandleFileTool(s, name, arguments)
+		}
 		return types.ToolCallResult{}, fmt.Errorf("tool not found")
 	}
 

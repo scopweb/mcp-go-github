@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	ghclient "github.com/google/go-github/v81/github"
 	"golang.org/x/oauth2"
 
 	"github.com/jotajotape/github-go-server-mcp/internal/server"
+	"github.com/jotajotape/github-go-server-mcp/pkg/admin"
 	"github.com/jotajotape/github-go-server-mcp/pkg/git"
 	"github.com/jotajotape/github-go-server-mcp/pkg/github"
 	"github.com/jotajotape/github-go-server-mcp/pkg/types"
@@ -25,6 +27,14 @@ func main() {
 
 	if *profile != "" {
 		log.Printf("Starting MCP server with profile: %s", *profile)
+	}
+
+	// Detectar disponibilidad de Git
+	gitAvailable := false
+	if _, lookErr := exec.LookPath("git"); lookErr == nil {
+		gitAvailable = true
+	} else {
+		log.Printf("Git not found: %v. Git tools will be disabled, API tools remain available.", lookErr)
 	}
 
 	// Inicializar cliente Git
@@ -51,10 +61,25 @@ func main() {
 	// Crear wrapper del cliente GitHub
 	wrappedGithubClient := github.NewClient(&githubClient)
 
+	// Crear cliente administrativo (v3.0)
+	adminClient := admin.NewClient(&githubClient)
+
+	// Inicializar safety middleware (v3.0)
+	safetyMiddleware, err := server.NewSafetyMiddleware("./safety.json")
+	if err != nil {
+		log.Printf("Warning: Failed to initialize safety middleware (using defaults): %v", err)
+		// Create with empty config path to use defaults
+		safetyMiddleware, _ = server.NewSafetyMiddleware("")
+	}
+
 	// Crear servidor MCP
 	mcpServer := &server.MCPServer{
-		GithubClient: wrappedGithubClient,
-		GitClient:    gitClient,
+		GithubClient:    wrappedGithubClient,
+		GitClient:       gitClient,
+		AdminClient:     adminClient,
+		Safety:          safetyMiddleware,
+		GitAvailable:    gitAvailable,
+		RawGitHubClient: &githubClient,
 	}
 
 	// Leer solicitudes JSON-RPC del stdin
