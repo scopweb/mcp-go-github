@@ -65,11 +65,15 @@ func main() {
 	adminClient := admin.NewClient(&githubClient)
 
 	// Inicializar safety middleware (v3.0)
-	safetyMiddleware, err := server.NewSafetyMiddleware("./safety.json")
+	var safetyMiddleware *server.SafetyMiddleware
+	safetyMiddleware, err = server.NewSafetyMiddleware("./safety.json")
 	if err != nil {
 		log.Printf("Warning: Failed to initialize safety middleware (using defaults): %v", err)
 		// Create with empty config path to use defaults
-		safetyMiddleware, _ = server.NewSafetyMiddleware("")
+		safetyMiddleware, err = server.NewSafetyMiddleware("")
+		if err != nil {
+			log.Fatalf("Fatal: Cannot initialize safety middleware even with defaults: %v", err)
+		}
 	}
 
 	// Crear servidor MCP

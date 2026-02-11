@@ -21,6 +21,7 @@
 
 ### Features
 - **Multi-profile**: Single executable, multiple GitHub accounts via `--profile` flag
+- **Protocol auto-detection**: Automatically detects and responds with client's MCP protocol version (universal compatibility)
 - **Hybrid ops**: Local Git first (0 tokens) → GitHub API fallback
 - **45+ Git tools**: Complete workflow from basic to advanced operations
 - **Conflict management**: Safe merge, detection, resolution, backups

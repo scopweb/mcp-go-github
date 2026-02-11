@@ -7,6 +7,24 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### 🔧 Fixed
+
+#### Protocol Version Auto-Detection (2026-02-11)
+- **Issue**: Server was using fixed protocol version `2025-11-25`, causing compatibility issues with different MCP client versions
+- **Solution**: Implemented automatic protocol version detection - server now reads the client's requested version from `initialize` params and responds with the same version
+- **Benefit**: Server is now compatible with any MCP client version without recompilation
+- **Fallback**: Defaults to `2024-11-05` if client doesn't specify a version
+- **Files Changed**: `internal/server/server.go` (initialize handler)
+
+### 📚 Documentation
+
+#### Protocol Compatibility Documentation (2026-02-11)
+- Created `PROTOCOL_COMPATIBILITY.md` with comprehensive protocol version compatibility documentation
+- Explains automatic detection mechanism with code examples
+- Documents all supported MCP protocol versions (universal compatibility)
+- Includes migration notes from previous versions
+- Updated `CLAUDE.md` with protocol auto-detection feature
+
 ### ✅ MCP Specification Compliance
 
 #### Comprehensive MCP Spec Review Completed (2026-02-11)

@@ -53,8 +53,14 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 
 	switch req.Method {
 	case "initialize":
+		// Extract client's requested protocol version and respond with the same
+		clientProtocolVersion := "2024-11-05" // Default fallback
+		if version, ok := req.Params["protocolVersion"].(string); ok && version != "" {
+			clientProtocolVersion = version
+		}
+
 		response.Result = map[string]interface{}{
-			"protocolVersion": "2025-11-25",
+			"protocolVersion": clientProtocolVersion,
 			"capabilities": map[string]interface{}{
 				"tools": map[string]interface{}{
 					"listChanged": true,
