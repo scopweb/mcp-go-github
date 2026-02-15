@@ -12,283 +12,284 @@ Go-based MCP server that connects GitHub to Claude Desktop, enabling direct repo
 - **Smart Git Detection**: Auto-detects Git availability, filters tools accordingly
 - **Audit Logging**: JSON-based operation tracking with automatic rotation
 
-## Permisos Necesarios del Token
+## Token Permissions Required
 
-### Minimos Requeridos:
+### Minimum Required:
 ```
 repo        - Full control of private repositories (essential)
 ```
 
-### Opcionales (para funcionalidad completa):
+### Optional (for full functionality):
 ```
-delete_repo      - Para github_delete_repository
-workflow         - Para re-run de GitHub Actions workflows
-security_events  - Para dismissar alertas de seguridad
+delete_repo      - For github_delete_repository
+workflow         - For re-running GitHub Actions workflows
+security_events  - For dismissing security alerts
 admin:repo_hook  - Enhanced webhook management (v3.0)
-admin:org        - Para team management en organizaciones (v3.0)
+admin:org        - For team management in organizations (v3.0)
 ```
 
-### Generar Token:
-1. Ve a: [GitHub Settings > Personal Access Tokens](https://github.com/settings/tokens)
+### Generate Token:
+1. Go to: [GitHub Settings > Personal Access Tokens](https://github.com/settings/tokens)
 2. Click "Generate new token (classic)"
-3. Selecciona los scopes necesarios
-4. Copia el token generado
+3. Select the required scopes
+4. Copy the generated token
 
-## Instalacion
+## Installation
 
 ```bash
-# Instalar dependencias
+# Install dependencies
 go mod tidy
 
-# Compilar (usando el script incluido)
-.\compile.bat
+# Compile (using included script)
+.\compile.bat          # Windows
+./build-mac.bat        # macOS/Linux
 
-# O compilar manualmente
-go build -o github-mcp-server-v3.exe ./cmd/github-mcp-server/
+# Or compile manually
+go build -o mcp-go-github.exe ./cmd/github-mcp-server/
 ```
 
 ## Testing
 
 ```bash
-# Ejecutar todos los tests
+# Run all tests
 go test ./...
 
-# Ejecutar tests con verbose
+# Run tests with verbose output
 go test ./... -v
 
-# Ejecutar tests de un paquete especifico
+# Run tests for a specific package
 go test ./pkg/git/ -v
 go test ./pkg/safety/ -v
 ```
 
-## Configuracion Claude Desktop
+## Claude Desktop Configuration
 
-### Multi-profile (Recomendado)
+### Multi-profile (Recommended)
 
 ```json
 {
   "mcpServers": {
     "github-personal": {
-      "command": "path\\to\\github-mcp-server-v3.exe",
+      "command": "C:\\path\\to\\mcp-go-github.exe",
       "args": ["--profile", "personal"],
       "env": {
-        "GITHUB_TOKEN": "ghp_token_personal"
+        "GITHUB_TOKEN": "ghp_your_personal_token"
       }
     },
     "github-work": {
-      "command": "path\\to\\github-mcp-server-v3.exe",
+      "command": "C:\\path\\to\\mcp-go-github.exe",
       "args": ["--profile", "work"],
       "env": {
-        "GITHUB_TOKEN": "ghp_token_work"
+        "GITHUB_TOKEN": "ghp_your_work_token"
       }
     }
   }
 }
 ```
 
-### Configuracion Basica (Un solo token)
+### Basic Configuration (Single token)
 
 ```json
 {
   "mcpServers": {
     "github-mcp": {
-      "command": "path\\to\\github-mcp-server-v3.exe",
+      "command": "C:\\path\\to\\mcp-go-github.exe",
       "args": [],
       "env": {
-        "GITHUB_TOKEN": "tu_token_aqui"
+        "GITHUB_TOKEN": "your_token_here"
       }
     }
   }
 }
 ```
 
-## Herramientas Disponibles (82 Tools)
+## Available Tools (82 Tools)
 
-### Informacion Git (8)
+### Git Information (8)
 
-| Herramienta | Descripcion | Tokens |
-|-------------|-------------|--------|
-| `git_status` | Estado del repositorio Git local | 0 |
-| `git_list_files` | Lista todos los archivos en el repositorio | 0 |
-| `git_get_file_content` | Obtiene contenido de un archivo desde Git | 0 |
-| `git_get_file_sha` | Obtiene el SHA de un archivo especifico | 0 |
-| `git_get_last_commit` | Obtiene el SHA del ultimo commit | 0 |
-| `git_get_changed_files` | Lista archivos modificados | 0 |
-| `git_validate_repo` | Valida si un directorio es un repo Git valido | 0 |
-| `git_context` | Auto-detecta contexto Git | 0 |
+| Tool | Description | Tokens |
+|------|-------------|--------|
+| `git_status` | Local Git repository status | 0 |
+| `git_list_files` | List all files in repository | 0 |
+| `git_get_file_content` | Get file content from Git | 0 |
+| `git_get_file_sha` | Get SHA of specific file | 0 |
+| `git_get_last_commit` | Get last commit SHA | 0 |
+| `git_get_changed_files` | List modified files | 0 |
+| `git_validate_repo` | Validate if directory is a valid Git repo | 0 |
+| `git_context` | Auto-detect Git context | 0 |
 
-### Operaciones Git Basicas (6)
+### Basic Git Operations (6)
 
-| Herramienta | Descripcion | Tokens |
-|-------------|-------------|--------|
-| `git_set_workspace` | Configura directorio de trabajo | 0 |
-| `git_add` | Agrega archivos al staging area | 0 |
-| `git_commit` | Hace commit de los cambios | 0 |
-| `git_push` | Sube cambios al remoto | 0 |
-| `git_pull` | Baja cambios del remoto | 0 |
-| `git_checkout` | Cambia de rama o crea nueva | 0 |
+| Tool | Description | Tokens |
+|------|-------------|--------|
+| `git_set_workspace` | Set working directory | 0 |
+| `git_add` | Add files to staging area | 0 |
+| `git_commit` | Commit changes | 0 |
+| `git_push` | Push changes to remote | 0 |
+| `git_pull` | Pull changes from remote | 0 |
+| `git_checkout` | Switch branch or create new | 0 |
 
-### Analisis y Gestion Git (7)
+### Git Analysis & Management (7)
 
-| Herramienta | Descripcion | Tokens |
-|-------------|-------------|--------|
-| `git_log_analysis` | Analisis del historial de commits | 0 |
-| `git_diff_files` | Muestra archivos modificados con estadisticas | 0 |
-| `git_branch_list` | Lista ramas con informacion detallada | 0 |
-| `git_stash` | Operaciones de stash | 0 |
-| `git_remote` | Gestion de repositorios remotos | 0 |
-| `git_tag` | Gestion de tags/etiquetas | 0 |
-| `git_clean` | Limpieza de archivos sin seguimiento | 0 |
+| Tool | Description | Tokens |
+|------|-------------|--------|
+| `git_log_analysis` | Commit history analysis | 0 |
+| `git_diff_files` | Show modified files with statistics | 0 |
+| `git_branch_list` | List branches with detailed info | 0 |
+| `git_stash` | Stash operations | 0 |
+| `git_remote` | Remote repository management | 0 |
+| `git_tag` | Tag management | 0 |
+| `git_clean` | Clean untracked files | 0 |
 
-### Operaciones Git Avanzadas (7)
+### Advanced Git Operations (7)
 
-| Herramienta | Descripcion | Tokens |
-|-------------|-------------|--------|
-| `git_checkout_remote` | Checkout de rama remota con tracking | 0 |
-| `git_merge` | Merge de ramas con validaciones | 0 |
-| `git_rebase` | Rebase con rama especificada | 0 |
-| `git_pull_with_strategy` | Pull con estrategias | 0 |
-| `git_force_push` | Push con --force-with-lease | 0 |
-| `git_push_upstream` | Push configurando upstream | 0 |
-| `git_sync_with_remote` | Sincronizacion con rama remota | 0 |
+| Tool | Description | Tokens |
+|------|-------------|--------|
+| `git_checkout_remote` | Checkout remote branch with tracking | 0 |
+| `git_merge` | Merge branches with validation | 0 |
+| `git_rebase` | Rebase with specified branch | 0 |
+| `git_pull_with_strategy` | Pull with strategies | 0 |
+| `git_force_push` | Push with --force-with-lease | 0 |
+| `git_push_upstream` | Push setting upstream | 0 |
+| `git_sync_with_remote` | Synchronize with remote branch | 0 |
 
-### Gestion de Conflictos (6)
+### Conflict Management (6)
 
-| Herramienta | Descripcion | Tokens |
-|-------------|-------------|--------|
-| `git_safe_merge` | Merge seguro con backup | 0 |
-| `git_conflict_status` | Estado de conflictos | 0 |
-| `git_resolve_conflicts` | Resolucion automatica | 0 |
-| `git_validate_clean_state` | Valida working directory limpio | 0 |
-| `git_detect_conflicts` | Detecta conflictos potenciales | 0 |
-| `git_create_backup` | Crea backup del estado actual | 0 |
+| Tool | Description | Tokens |
+|------|-------------|--------|
+| `git_safe_merge` | Safe merge with backup | 0 |
+| `git_conflict_status` | Conflict status | 0 |
+| `git_resolve_conflicts` | Automatic resolution | 0 |
+| `git_validate_clean_state` | Validate clean working directory | 0 |
+| `git_detect_conflicts` | Detect potential conflicts | 0 |
+| `git_create_backup` | Create backup of current state | 0 |
 
-### Operaciones Hibridas (2)
+### Hybrid Operations (2)
 
-| Herramienta | Descripcion | Tokens |
-|-------------|-------------|--------|
-| `create_file` | Crea archivo (Git local, fallback API) | 0* |
-| `update_file` | Actualiza archivo (Git local, fallback API) | 0* |
+| Tool | Description | Tokens |
+|------|-------------|--------|
+| `create_file` | Create file (local Git, API fallback) | 0* |
+| `update_file` | Update file (local Git, API fallback) | 0* |
 
 ### GitHub API (4)
 
-| Herramienta | Descripcion |
-|-------------|-------------|
-| `github_list_repos` | Lista repositorios del usuario |
-| `github_create_repo` | Crea nuevo repositorio |
-| `github_list_prs` | Lista pull requests |
-| `github_create_pr` | Crea nuevo pull request |
+| Tool | Description |
+|------|-------------|
+| `github_list_repos` | List user repositories |
+| `github_create_repo` | Create new repository |
+| `github_list_prs` | List pull requests |
+| `github_create_pr` | Create new pull request |
 
-### File Operations - Sin Git (4) [NEW v3.0]
+### File Operations - Git-Free (4) [NEW v3.0]
 
-| Herramienta | Descripcion |
-|-------------|-------------|
-| `github_list_repo_contents` | Listar archivos y directorios via API |
-| `github_download_file` | Descargar archivo individual |
-| `github_download_repo` | Clonar repositorio completo via API |
-| `github_pull_repo` | Actualizar directorio local via API |
+| Tool | Description |
+|------|-------------|
+| `github_list_repo_contents` | List files and directories via API |
+| `github_download_file` | Download individual file |
+| `github_download_repo` | Clone complete repository via API |
+| `github_pull_repo` | Update local directory via API |
 
 ### Dashboard (7)
 
-| Herramienta | Descripcion |
-|-------------|-------------|
-| `github_dashboard` | Panel general de actividad |
-| `github_notifications` | Notificaciones pendientes |
-| `github_assigned_issues` | Issues asignados |
-| `github_prs_to_review` | PRs pendientes de review |
-| `github_security_alerts` | Alertas de seguridad |
-| `github_failed_workflows` | Workflows fallidos |
-| `github_mark_notification_read` | Marcar notificacion como leida |
+| Tool | Description |
+|------|-------------|
+| `github_dashboard` | General activity panel |
+| `github_notifications` | Pending notifications |
+| `github_assigned_issues` | Assigned issues |
+| `github_prs_to_review` | PRs pending review |
+| `github_security_alerts` | Security alerts |
+| `github_failed_workflows` | Failed workflows |
+| `github_mark_notification_read` | Mark notification as read |
 
 ### Response (3)
 
-| Herramienta | Descripcion |
-|-------------|-------------|
-| `github_comment_issue` | Comentar en issue |
-| `github_comment_pr` | Comentar en pull request |
-| `github_review_pr` | Crear review en PR (APPROVE/REQUEST_CHANGES/COMMENT) |
+| Tool | Description |
+|------|-------------|
+| `github_comment_issue` | Comment on issue |
+| `github_comment_pr` | Comment on pull request |
+| `github_review_pr` | Create PR review (APPROVE/REQUEST_CHANGES/COMMENT) |
 
 ### Repair (6)
 
-| Herramienta | Descripcion |
-|-------------|-------------|
-| `github_close_issue` | Cerrar issue |
-| `github_merge_pr` | Mergear pull request |
-| `github_rerun_workflow` | Re-ejecutar workflow |
-| `github_dismiss_dependabot_alert` | Dismissar alerta Dependabot |
-| `github_dismiss_code_alert` | Dismissar alerta Code Scanning |
-| `github_dismiss_secret_alert` | Dismissar alerta Secret Scanning |
+| Tool | Description |
+|------|-------------|
+| `github_close_issue` | Close issue |
+| `github_merge_pr` | Merge pull request |
+| `github_rerun_workflow` | Re-run workflow |
+| `github_dismiss_dependabot_alert` | Dismiss Dependabot alert |
+| `github_dismiss_code_alert` | Dismiss Code Scanning alert |
+| `github_dismiss_secret_alert` | Dismiss Secret Scanning alert |
 
 ### Repository Admin (4) [NEW v3.0]
 
-| Herramienta | Riesgo | Descripcion |
-|-------------|--------|-------------|
-| `github_get_repo_settings` | LOW | Ver configuracion del repositorio |
-| `github_update_repo_settings` | MEDIUM | Modificar nombre, descripcion, visibilidad |
-| `github_archive_repository` | CRITICAL | Archivar repositorio (read-only) |
-| `github_delete_repository` | CRITICAL | Eliminar repositorio PERMANENTEMENTE |
+| Tool | Risk | Description |
+|------|------|-------------|
+| `github_get_repo_settings` | LOW | View repository configuration |
+| `github_update_repo_settings` | MEDIUM | Modify name, description, visibility |
+| `github_archive_repository` | CRITICAL | Archive repository (read-only) |
+| `github_delete_repository` | CRITICAL | Delete repository PERMANENTLY |
 
 ### Branch Protection (3) [NEW v3.0]
 
-| Herramienta | Riesgo | Descripcion |
-|-------------|--------|-------------|
-| `github_get_branch_protection` | LOW | Ver reglas de proteccion |
-| `github_update_branch_protection` | HIGH | Configurar reglas de proteccion |
-| `github_delete_branch_protection` | CRITICAL | Eliminar proteccion de branch |
+| Tool | Risk | Description |
+|------|------|-------------|
+| `github_get_branch_protection` | LOW | View protection rules |
+| `github_update_branch_protection` | HIGH | Configure protection rules |
+| `github_delete_branch_protection` | CRITICAL | Remove branch protection |
 
 ### Webhooks (5) [NEW v3.0]
 
-| Herramienta | Riesgo | Descripcion |
-|-------------|--------|-------------|
-| `github_list_webhooks` | LOW | Listar webhooks del repo |
-| `github_create_webhook` | MEDIUM | Crear webhook |
-| `github_update_webhook` | MEDIUM | Modificar webhook |
-| `github_delete_webhook` | HIGH | Eliminar webhook |
-| `github_test_webhook` | LOW | Enviar test delivery |
+| Tool | Risk | Description |
+|------|------|-------------|
+| `github_list_webhooks` | LOW | List repository webhooks |
+| `github_create_webhook` | MEDIUM | Create webhook |
+| `github_update_webhook` | MEDIUM | Modify webhook |
+| `github_delete_webhook` | HIGH | Delete webhook |
+| `github_test_webhook` | LOW | Send test delivery |
 
 ### Collaborators (8) [NEW v3.0]
 
-| Herramienta | Riesgo | Descripcion |
-|-------------|--------|-------------|
-| `github_list_collaborators` | LOW | Listar colaboradores |
-| `github_check_collaborator` | LOW | Verificar acceso |
-| `github_add_collaborator` | MEDIUM | Invitar con permisos |
-| `github_update_collaborator_permission` | MEDIUM | Cambiar nivel de acceso |
-| `github_remove_collaborator` | HIGH | Revocar acceso |
-| `github_list_invitations` | LOW | Ver invitaciones pendientes |
-| `github_accept_invitation` | MEDIUM | Aceptar invitacion |
-| `github_cancel_invitation` | MEDIUM | Cancelar invitacion |
+| Tool | Risk | Description |
+|------|------|-------------|
+| `github_list_collaborators` | LOW | List collaborators |
+| `github_check_collaborator` | LOW | Verify access |
+| `github_add_collaborator` | MEDIUM | Invite with permissions |
+| `github_update_collaborator_permission` | MEDIUM | Change access level |
+| `github_remove_collaborator` | HIGH | Revoke access |
+| `github_list_invitations` | LOW | View pending invitations |
+| `github_accept_invitation` | MEDIUM | Accept invitation |
+| `github_cancel_invitation` | MEDIUM | Cancel invitation |
 
 ### Teams (2) [NEW v3.0]
 
-| Herramienta | Riesgo | Descripcion |
-|-------------|--------|-------------|
-| `github_list_repo_teams` | LOW | Listar teams con acceso |
-| `github_add_repo_team` | MEDIUM | Otorgar acceso de team |
+| Tool | Risk | Description |
+|------|------|-------------|
+| `github_list_repo_teams` | LOW | List teams with access |
+| `github_add_repo_team` | MEDIUM | Grant team access |
 
 ## Safety System (v3.0)
 
-### 4 Niveles de Riesgo
+### 4 Risk Levels
 
-| Nivel | Descripcion | Comportamiento (modo moderate) |
-|-------|-------------|-------------------------------|
-| **LOW** | Solo lectura | Ejecucion directa |
-| **MEDIUM** | Cambios reversibles | Dry-run opcional |
-| **HIGH** | Impacta colaboracion | Requiere token de confirmacion |
-| **CRITICAL** | Irreversible | Token + recomendacion de backup |
+| Level | Description | Behavior (moderate mode) |
+|-------|-------------|-------------------------|
+| **LOW** | Read-only | Direct execution |
+| **MEDIUM** | Reversible changes | Optional dry-run |
+| **HIGH** | Impacts collaboration | Requires confirmation token |
+| **CRITICAL** | Irreversible | Token + backup recommendation |
 
-### Modos de Seguridad
+### Safety Modes
 
-| Modo | Confirma desde | Uso recomendado |
-|------|---------------|-----------------|
-| `strict` | MEDIUM+ | Entornos de produccion criticos |
-| `moderate` | HIGH+ | Uso general (default) |
-| `permissive` | CRITICAL | Desarrollo local |
-| `disabled` | Nunca | No recomendado |
+| Mode | Confirms from | Recommended use |
+|------|--------------|-----------------|
+| `strict` | MEDIUM+ | Critical production environments |
+| `moderate` | HIGH+ | General use (default) |
+| `permissive` | CRITICAL | Local development |
+| `disabled` | Never | Not recommended |
 
-### Configuracion de Seguridad
+### Safety Configuration
 
-Crear `safety.json` junto al ejecutable (opcional):
+Create `safety.json` next to the executable (optional):
 
 ```json
 {
@@ -301,46 +302,58 @@ Crear `safety.json` junto al ejecutable (opcional):
 }
 ```
 
-Si no existe `safety.json`, usa modo **moderate** con audit logging habilitado.
+If `safety.json` doesn't exist, defaults to **moderate mode** with audit logging enabled.
 
-Ver `safety.json.example` para configuracion completa de referencia.
+See `safety.json.example` for complete configuration reference.
 
 ## Git-Free Mode (v3.0)
 
-En sistemas sin Git instalado (ej: Mac sin Xcode Command Line Tools), el servidor:
+On systems without Git installed (e.g., Mac without Xcode Command Line Tools), the server:
 
-1. **Detecta automaticamente** la ausencia de Git
-2. **Filtra** las herramientas git_ del listado
-3. **Mantiene operativas** todas las herramientas API, admin, dashboard, file operations
-4. **Retorna error amigable** si se intenta usar una herramienta Git
+1. **Automatically detects** Git absence
+2. **Filters** git_ tools from listing
+3. **Keeps operational** all API, admin, dashboard, file operation tools
+4. **Returns friendly error** if a Git tool is attempted
 
-Las 4 herramientas de File Operations (`github_list_repo_contents`, `github_download_file`, `github_download_repo`, `github_pull_repo`) permiten clonar y actualizar repositorios usando solo la API de GitHub, sin necesidad de Git.
+The 4 File Operations tools (`github_list_repo_contents`, `github_download_file`, `github_download_repo`, `github_pull_repo`) allow cloning and updating repositories using only the GitHub API, without Git.
 
-## Seguridad
+## Security
 
-- Prevencion de inyeccion de argumentos en comandos Git
-- Defensa contra Path Traversal
-- Validacion estricta de entradas de usuario
-- Prevencion de SSRF en URLs de webhooks (v3.0)
-- Tokens de confirmacion criptograficos para operaciones destructivas (v3.0)
-- Audit logging de operaciones administrativas (v3.0)
+- Prevention of argument injection in Git commands
+- Path Traversal defense
+- Strict user input validation
+- SSRF prevention in webhook URLs (v3.0)
+- Cryptographic confirmation tokens for destructive operations (v3.0)
+- Audit logging of administrative operations (v3.0)
 
-## Requisitos del Sistema
+## System Requirements
 
-- **Go**: 1.25.0 o superior
-- **Git**: Opcional (auto-detectado, 48 tools funcionan sin Git)
+- **Go**: 1.25.0 or higher
+- **Git**: Optional (auto-detected, 48 tools work without Git)
 - **github.com/google/go-github**: v81.0.0
 - **golang.org/x/oauth2**: v0.34.0
-- **GitHub Token**: Con permiso `repo` minimo
+- **GitHub Token**: Minimum `repo` permission
 
-## Estado del Proyecto
+## Project Status
 
-- 82 herramientas MCP operativas (48 sin Git)
-- Sistema hibrido Git local + GitHub API
-- 22 herramientas administrativas con safety layer
-- 4 herramientas de archivo sin Git
-- Soporte multi-perfil
-- Testing completo con repositorio real
-- Listo para produccion (v3.0)
+- 82 operational MCP tools (48 without Git)
+- Hybrid local Git + GitHub API system
+- 22 administrative tools with safety layer
+- 4 Git-free file tools
+- Multi-profile support
+- Complete testing with real repository
+- Production ready (v3.0)
 
-**Changelog**: Ver [CHANGELOG.md](CHANGELOG.md) para historial completo de cambios
+**Changelog**: See [CHANGELOG.md](CHANGELOG.md) for complete change history
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Security
+
+For security issues, please see our [Security Policy](SECURITY.md).

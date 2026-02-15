@@ -46,7 +46,6 @@ coverage.out
 # Development docs (not needed in repo)
 CONVERSATION.md
 *.prompt.md
-EstudioPlandeActulizacion.md
 ejemplos_github_repositorios/
 
 # Test artifacts
@@ -54,3 +53,15 @@ test_mcp.go
 
 # Claude Code local configuration
 .claude/
+.agent/
+.agents/
+
+# Development scripts and tests
+check-config.ps1
+diagnose.ps1
+test-results.txt
+test-final-results.txt
+nul
+
+# Website (if not part of main project)
+website/
