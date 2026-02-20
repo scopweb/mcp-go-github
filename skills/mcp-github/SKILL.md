@@ -25,7 +25,7 @@ metadata:
 
 Use the **mcp-go-github** MCP server to interact with GitHub repositories, Git workflows, pull requests, issues, dashboards, and administrative operations — all through Claude Desktop via MCP protocol.
 
-This skill provides **82 tools** organized in categories: Git operations, GitHub API, dashboard, hybrid file ops, response/repair, and full admin controls with a 4-tier safety system.
+This skill provides **86 tools** organized in categories: Git operations, GitHub API, dashboard, hybrid file ops, Git-free file ops, response/repair, and full admin controls with a 4-tier safety system.
 
 ## When to Use
 
@@ -222,6 +222,25 @@ update_file             -> Update file (Git-first, GitHub API fallback)
 ```
 
 These tools try local Git operations first (zero API tokens consumed). If Git is unavailable, they fall back to the GitHub API automatically.
+
+### Git-Free File Tools (4)
+
+```
+github_list_repo_contents -> List files/directories in a repo path (no Git required)
+github_download_file      -> Download a single file to local disk (no Git required)
+github_download_repo      -> Clone entire repo via API (no Git required)
+github_pull_repo          -> Update local directory from repo via API (no Git required)
+```
+
+These tools work entirely through the GitHub API, enabling repository access on systems without Git installed.
+
+**Usage pattern — work without Git:**
+```
+1. github_list_repo_contents {"owner": "myorg", "repo": "myapp", "path": "src"}
+2. github_download_file {"owner": "myorg", "repo": "myapp", "path": "src/main.go"}
+3. github_download_repo {"owner": "myorg", "repo": "myapp", "branch": "main", "local_dir": "./myapp"}
+4. github_pull_repo {"owner": "myorg", "repo": "myapp", "local_dir": "./myapp"}
+```
 
 ### GitHub API Tools (4)
 
