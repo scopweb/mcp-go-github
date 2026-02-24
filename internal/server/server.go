@@ -194,6 +194,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 	case "git_list_files":
 		ref, _ := arguments["ref"].(string)
 		text, err = s.GitClient.ListFiles(ref)
+	case "git_init":
+		path, _ := arguments["path"].(string)
+		initialBranch, _ := arguments["initial_branch"].(string)
+		text, err = s.GitClient.Init(path, initialBranch)
 	case "git_add":
 		files, _ := arguments["files"].(string)
 		text, err = s.GitClient.Add(files)

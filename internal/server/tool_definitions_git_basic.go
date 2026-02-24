@@ -6,6 +6,19 @@ import "github.com/jotajotape/github-go-server-mcp/pkg/types"
 func ListGitBasicTools() []types.Tool {
 	return []types.Tool{
 		{
+			Name:        "git_init",
+			Description: "Inicializa un nuevo repositorio Git en el directorio especificado",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"path":           {Type: "string", Description: "Ruta del directorio donde inicializar el repo (debe existir)"},
+					"initial_branch": {Type: "string", Description: "Nombre de la rama inicial (defecto: main)"},
+				},
+				Required: []string{"path"},
+			},
+			Annotations: IdempotentAnnotation(),
+		},
+		{
 			Name:        "git_add",
 			Description: "Agrega archivos al staging area (requiere Git local)",
 			InputSchema: types.ToolInputSchema{

@@ -66,6 +66,9 @@ type GitOperations interface {
 	// Phase 2: Conflict management (Fase 2)
 	ShowConflict(filePath string) (string, error)
 	ResolveFile(filePath string, strategy string, customContent *string) (string, error)
+
+	// Repository initialization
+	Init(path string, initialBranch string) (string, error)
 }
 
 // GitHubOperations define la interfaz para las operaciones de GitHub.

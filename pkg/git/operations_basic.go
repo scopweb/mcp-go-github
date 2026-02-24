@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -213,6 +214,48 @@ func (c *Client) GetCurrentBranch() string {
 
 func (c *Client) GetRemoteURL() string {
 	return c.Config.RemoteURL
+}
+
+// Init inicializa un nuevo repositorio Git en la ruta especificada
+func (c *Client) Init(path string, initialBranch string) (string, error) {
+	// Verificar que Git está disponible
+	if _, err := c.executor.LookPath("git"); err != nil {
+		return "", fmt.Errorf("git no está disponible en el sistema")
+	}
+
+	// Validar que el directorio existe
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return "", fmt.Errorf("el directorio no existe: %s", path)
+	}
+
+	// Cambiar al directorio
+	restore, err := enterDir(path)
+	if err != nil {
+		return "", err
+	}
+	defer restore()
+
+	// Determinar rama inicial
+	branch := initialBranch
+	if branch == "" {
+		branch = "main"
+	}
+
+	// Ejecutar git init con rama inicial
+	cmd := c.executor.Command("git", "init", "-b", branch)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("git init falló en %s: %s", path, string(output))
+	}
+
+	// Actualizar Config para que comandos posteriores funcionen inmediatamente
+	c.Config.WorkspacePath = path
+	c.Config.RepoPath = path
+	c.Config.IsGitRepo = true
+	c.Config.HasGit = true
+	c.Config.CurrentBranch = branch
+
+	return fmt.Sprintf("Repositorio Git inicializado en %s (rama: %s)\n%s", path, branch, string(output)), nil
 }
 
 // Advanced branch operations
