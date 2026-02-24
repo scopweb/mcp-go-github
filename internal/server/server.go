@@ -725,11 +725,17 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		if IsFileOperation(name) {
 			return HandleFileTool(s, name, arguments)
 		}
-		return types.ToolCallResult{}, fmt.Errorf("tool not found")
+		return types.ToolCallResult{
+			Content: []types.Content{{Type: "text", Text: "tool not found"}},
+			IsError: true,
+		}, nil
 	}
 
 	if err != nil {
-		return types.ToolCallResult{}, err
+		return types.ToolCallResult{
+			Content: []types.Content{{Type: "text", Text: err.Error()}},
+			IsError: true,
+		}, nil
 	}
 
 	return types.ToolCallResult{

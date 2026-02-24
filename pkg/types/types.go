@@ -65,6 +65,7 @@ type ToolsListResult struct {
 
 type ToolCallResult struct {
 	Content []Content `json:"content"`
+	IsError bool      `json:"isError,omitempty"`
 }
 
 type Content struct {
