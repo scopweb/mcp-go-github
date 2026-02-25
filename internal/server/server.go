@@ -324,6 +324,19 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 	case "git_create_backup":
 		name, _ := arguments["name"].(string)
 		text, err = s.GitClient.CreateBackup(name)
+	case "git_reset":
+		mode, _ := arguments["mode"].(string)
+		target, _ := arguments["target"].(string)
+		filesStr, _ := arguments["files"].(string)
+		var files []string
+		if filesStr != "" {
+			for _, f := range strings.Split(filesStr, ",") {
+				if f = strings.TrimSpace(f); f != "" {
+					files = append(files, f)
+				}
+			}
+		}
+		text, err = s.GitClient.Reset(mode, target, files)
 
 	// Herramientas híbridas
 	case "create_file":

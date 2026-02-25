@@ -234,5 +234,18 @@ func ListGitAdvancedTools() []types.Tool {
 				Required: []string{"name"},
 			},
 		},
+		{
+			Name:        "git_reset",
+			Description: "↶ Deshace commits moviendo HEAD a un commit específico (soft/mixed/hard)",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"mode":   {Type: "string", Description: "Modo: soft (mantiene staging), mixed (deshace staging), hard (descarta todo)"},
+					"target": {Type: "string", Description: "Commit/ref destino (ej: HEAD~1, abc123, main)"},
+					"files":  {Type: "string", Description: "Archivos específicos a resetear (opcional, separados por comas)"},
+				},
+				Required: []string{"mode", "target"},
+			},
+		},
 	}
 }

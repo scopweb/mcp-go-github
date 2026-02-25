@@ -33,6 +33,13 @@ func (c *Client) Status() (string, error) {
 	}
 	defer restore()
 
+	// Re-read current remote URL from .git/config (not cached value)
+	if output, err := c.executor.Command("git", "remote", "get-url", "origin").Output(); err == nil {
+		c.Config.RemoteURL = strings.TrimSpace(string(output))
+	} else {
+		c.Config.RemoteURL = ""
+	}
+
 	if output, err := c.executor.Command("git", "status", "--porcelain").Output(); err == nil {
 		result["status"] = strings.TrimSpace(string(output))
 	}
