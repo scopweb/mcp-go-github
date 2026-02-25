@@ -7,7 +7,33 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### ✨ Added
+
+#### git_init Tool (2026-02-25)
+- **New Tool**: `git_init` - Initialize new Git repositories in any directory
+- **Usage**: Pass a directory path and optional initial branch name (defaults to "main")
+- **Pattern**: Follows SetWorkspace pattern, does not require IsGitRepo=true
+- **Benefit**: Eliminates need to use external terminal for repository initialization
+- **Idempotent**: Tool can be safely called multiple times
+
 ### 🔧 Fixed
+
+#### Windows Path Resolution and Tool Error Reporting (2026-02-25)
+- **Issue 1**: `git_set_workspace` and `git_validate_repo` failed with Windows paths, showing only "Tool execution failed"
+- **Issue 2**: Tool errors were returned as JSON-RPC protocol errors instead of tool content errors
+- **Solutions**:
+  1. Added `normalizeWindowsPath()` function to convert WSL paths (`/mnt/c/...`) to Windows paths (`C:\...`)
+  2. Add `IsError` field to `ToolCallResult` for MCP spec compliance
+  3. Changed tool error handling to return `ToolCallResult{IsError: true, Content: error_message}`
+  4. Improved error diagnostics with specific error messages for different failure modes
+- **Files Changed**:
+  - `pkg/types/types.go` - Added IsError field
+  - `internal/server/server.go` - Tool error handling refactored
+  - `pkg/git/operations_files.go` - Added path normalization, improved SetWorkspace/ValidateRepo
+- **Benefit**:
+  - Users now see descriptive error messages instead of generic "Tool execution failed"
+  - Full support for Windows and WSL paths
+  - MCP spec compliant error reporting
 
 #### Protocol Version Auto-Detection (2026-02-11)
 - **Issue**: Server was using fixed protocol version `2025-11-25`, causing compatibility issues with different MCP client versions
