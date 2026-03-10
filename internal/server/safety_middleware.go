@@ -63,6 +63,15 @@ func (m *SafetyMiddleware) WrapExecution(
 		}, nil
 	}
 
+	// Create backup before destructive operations
+	if check.RequiresBackup {
+		if backupPath, backupErr := m.engine.CreateBackup(operation, parameters); backupErr != nil {
+			fmt.Printf("Warning: backup failed for %s: %v\n", operation, backupErr)
+		} else if backupPath != "" {
+			fmt.Printf("Backup created: %s\n", backupPath)
+		}
+	}
+
 	// Execute the operation
 	result, execErr := executor()
 	executionTime := time.Since(startTime)

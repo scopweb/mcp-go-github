@@ -9,6 +9,24 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✨ Added
 
+#### Toolset Filtering via `--toolsets` flag (2026-03-10)
+- **New flag**: `--toolsets git,github,admin,files` — start the server exposing only the selected tool groups
+- **Groups**: `git` (14 tools), `github` (4 tools), `admin` (4 tools), `files` (4 tools); default `all` keeps all 26
+- **Benefit**: Reduces attack surface by restricting exposed tools per deployment context
+- **Example**: `--toolsets git,github` exposes 18 tools instead of 26, no admin tools available
+
+#### Real Auto-Backup for Destructive Operations (2026-03-10)
+- **Implemented**: `CreateBackup` now writes a real JSON file before any operation with `requires_backup: true`
+- **Format**: `{operation, timestamp, data}` written to `backup_path` directory (default `./.mcp-backups/`)
+- **Wiring**: `WrapExecution` in safety middleware calls `CreateBackup` before executing HIGH/CRITICAL ops when `enable_auto_backup: true`
+- **Non-blocking**: Backup failure logs a warning but does not block the operation
+- **Files Changed**: `pkg/safety/safety.go`, `internal/server/safety_middleware.go`
+
+#### push_files Tool (2026-02-28)
+- **New Tool**: `push_files` - Write multiple files and run git add -A + git commit + git push in one call
+- **Workflow**: Accepts an array of `{path, content}`, writes each file (create/update), stages all changes, commits with the provided message, and pushes to the current or specified branch
+- **Benefit**: Compresses multi-file uploads into a single tool call, avoiding the create_file → git_add → git_commit → git_push loop for every file
+
 #### git_init Tool (2026-02-25)
 - **New Tool**: `git_init` - Initialize new Git repositories in any directory
 - **Usage**: Pass a directory path and optional initial branch name (defaults to "main")

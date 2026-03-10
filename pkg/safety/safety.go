@@ -7,7 +7,9 @@ package safety
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -266,28 +268,45 @@ func (e *Engine) PreviewOperation(ctx context.Context, operation string, paramet
 	return preview, nil
 }
 
-// CreateBackup creates a backup of important data before a destructive operation
+// CreateBackup creates a backup of operation parameters before a destructive operation
 func (e *Engine) CreateBackup(operation string, data interface{}) (string, error) {
 	if !e.config.EnableAutoBackup {
 		return "", nil
 	}
 
-	// TODO: Implement actual backup logic
-	// For now, return backup path
+	if err := os.MkdirAll(e.config.BackupPath, 0750); err != nil {
+		return "", fmt.Errorf("failed to create backup directory: %w", err)
+	}
+
 	backupID := fmt.Sprintf("%s-%d", operation, time.Now().Unix())
 	backupPath := fmt.Sprintf("%s/%s.json", e.config.BackupPath, backupID)
+
+	payload := map[string]interface{}{
+		"operation": operation,
+		"timestamp": time.Now().Format(time.RFC3339),
+		"data":      data,
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal backup data: %w", err)
+	}
+
+	if err := os.WriteFile(backupPath, jsonData, 0640); err != nil {
+		return "", fmt.Errorf("failed to write backup file: %w", err)
+	}
 
 	return backupPath, nil
 }
 
 // FormatRollbackCommand generates a rollback command for an operation
 func FormatRollbackCommand(operation string, originalParams map[string]interface{}) string {
-	// Generate reverse operation command
+	// Generate reverse operation command (composite keys)
 	reverseOps := map[string]string{
-		"github_add_collaborator":     "github_remove_collaborator",
-		"github_create_webhook":       "github_delete_webhook",
-		"github_update_repo_settings": "github_update_repo_settings", // Restore from backup
-		"github_delete_webhook":       "github_create_webhook",       // Restore from backup
+		"github_collaborators:add":        "github_collaborators:remove",
+		"github_webhooks:create":          "github_webhooks:delete",
+		"github_admin_repo:update_settings": "github_admin_repo:update_settings", // Restore from backup
+		"github_webhooks:delete":          "github_webhooks:create",              // Restore from backup
 	}
 
 	reverseOp, exists := reverseOps[operation]

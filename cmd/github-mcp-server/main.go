@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	ghclient "github.com/google/go-github/v81/github"
 	"golang.org/x/oauth2"
@@ -23,10 +24,17 @@ import (
 func main() {
 	// Procesar arguments de línea de commands
 	profile := flag.String("profile", "", "Profile name (optional)")
+	toolsetsFlag := flag.String("toolsets", "all", "Comma-separated toolsets to enable: git,github,admin,files (default: all)")
 	flag.Parse()
 
 	if *profile != "" {
 		log.Printf("Starting MCP server with profile: %s", *profile)
+	}
+
+	var toolsets []string
+	if *toolsetsFlag != "all" && *toolsetsFlag != "" {
+		toolsets = strings.Split(*toolsetsFlag, ",")
+		log.Printf("Active toolsets: %v", toolsets)
 	}
 
 	// Detectar disponibilidad de Git
@@ -84,6 +92,7 @@ func main() {
 		Safety:          safetyMiddleware,
 		GitAvailable:    gitAvailable,
 		RawGitHubClient: &githubClient,
+		Toolsets:        toolsets,
 	}
 
 	// Leer solicitudes JSON-RPC del stdin
