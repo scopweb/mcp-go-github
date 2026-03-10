@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jotajotape/github-go-server-mcp/pkg/config"
@@ -66,9 +67,9 @@ func (m *SafetyMiddleware) WrapExecution(
 	// Create backup before destructive operations
 	if check.RequiresBackup {
 		if backupPath, backupErr := m.engine.CreateBackup(operation, parameters); backupErr != nil {
-			fmt.Printf("Warning: backup failed for %s: %v\n", operation, backupErr)
+			log.Printf("Warning: backup failed for %s: %v", operation, backupErr)
 		} else if backupPath != "" {
-			fmt.Printf("Backup created: %s\n", backupPath)
+			log.Printf("Backup created: %s", backupPath)
 		}
 	}
 
@@ -98,7 +99,7 @@ func (m *SafetyMiddleware) WrapExecution(
 	)
 	if logErr != nil {
 		// Log error but don't fail the operation
-		fmt.Printf("Warning: Failed to log operation: %v\n", logErr)
+		log.Printf("Warning: Failed to log operation: %v", logErr)
 	}
 
 	// Return result or error
