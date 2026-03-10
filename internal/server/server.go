@@ -68,7 +68,7 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "github-mcp-server-v4",
-				"version": "4.0.0",
+				"version": "4.1.0",
 			},
 		}
 	case "initialized":
