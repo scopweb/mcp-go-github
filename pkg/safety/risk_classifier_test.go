@@ -28,53 +28,53 @@ func TestRiskLevel_String(t *testing.T) {
 
 func TestClassifyOperation(t *testing.T) {
 	tests := []struct {
-		name           string
-		operation      string
-		wantExists     bool
-		wantLevel      RiskLevel
-		wantCategory   string
-		wantDryRun     bool
-		wantConfirm    bool
+		name         string
+		operation    string
+		wantExists   bool
+		wantLevel    RiskLevel
+		wantCategory string
+		wantDryRun   bool
+		wantConfirm  bool
 	}{
 		{
-			name:        "Read-only operation",
-			operation:   "github_get_repo_settings",
-			wantExists:  true,
-			wantLevel:   RiskLow,
+			name:         "Read-only operation",
+			operation:    "github_admin_repo:get_settings",
+			wantExists:   true,
+			wantLevel:    RiskLow,
 			wantCategory: "repository_settings",
-			wantDryRun:  false,
-			wantConfirm: false,
+			wantDryRun:   false,
+			wantConfirm:  false,
 		},
 		{
-			name:        "Medium risk operation",
-			operation:   "github_add_collaborator",
-			wantExists:  true,
-			wantLevel:   RiskMedium,
+			name:         "Medium risk operation",
+			operation:    "github_collaborators:add",
+			wantExists:   true,
+			wantLevel:    RiskMedium,
 			wantCategory: "collaborators",
-			wantDryRun:  true,
-			wantConfirm: false,
+			wantDryRun:   true,
+			wantConfirm:  false,
 		},
 		{
-			name:        "High risk operation",
-			operation:   "github_delete_webhook",
-			wantExists:  true,
-			wantLevel:   RiskHigh,
+			name:         "High risk operation",
+			operation:    "github_webhooks:delete",
+			wantExists:   true,
+			wantLevel:    RiskHigh,
 			wantCategory: "webhooks",
-			wantDryRun:  true,
-			wantConfirm: true,
+			wantDryRun:   true,
+			wantConfirm:  true,
 		},
 		{
-			name:        "Critical operation",
-			operation:   "github_delete_repository",
-			wantExists:  true,
-			wantLevel:   RiskCritical,
+			name:         "Critical operation",
+			operation:    "github_admin_repo:delete",
+			wantExists:   true,
+			wantLevel:    RiskCritical,
 			wantCategory: "repository_lifecycle",
-			wantDryRun:  true,
-			wantConfirm: true,
+			wantDryRun:   true,
+			wantConfirm:  true,
 		},
 		{
 			name:       "Unknown operation",
-			operation:  "github_unknown_operation",
+			operation:  "github_unknown:operation",
 			wantExists: false,
 		},
 		{
@@ -94,7 +94,7 @@ func TestClassifyOperation(t *testing.T) {
 			}
 
 			if !tt.wantExists {
-				return // No need to check risk details
+				return
 			}
 
 			if risk.Level != tt.wantLevel {
@@ -119,12 +119,12 @@ func TestIsAdminOperation(t *testing.T) {
 		operation string
 		want      bool
 	}{
-		{"Admin operation - repo settings", "github_get_repo_settings", true},
-		{"Admin operation - collaborator", "github_add_collaborator", true},
-		{"Admin operation - webhook", "github_create_webhook", true},
-		{"Admin operation - critical", "github_delete_repository", true},
+		{"Admin tool name", "github_admin_repo", true},
+		{"Admin composite key", "github_collaborators:add", true},
+		{"Admin composite key - webhook", "github_webhooks:create", true},
+		{"Admin composite key - branch protection", "github_branch_protection:delete", true},
 		{"Non-admin operation - git", "git_status", false},
-		{"Non-admin operation - github list", "github_list_repos", false},
+		{"Non-admin operation - github repo", "github_repo", false},
 		{"Unknown operation", "unknown_operation", false},
 	}
 
@@ -141,32 +141,32 @@ func TestGetOperationsByRiskLevel(t *testing.T) {
 	tests := []struct {
 		name      string
 		level     RiskLevel
-		wantMin   int // Minimum expected operations
-		wantExact string // One operation that should exist
+		wantMin   int
+		wantExact string
 	}{
 		{
 			name:      "Low risk operations",
 			level:     RiskLow,
 			wantMin:   4,
-			wantExact: "github_get_repo_settings",
+			wantExact: "github_admin_repo:get_settings",
 		},
 		{
 			name:      "Medium risk operations",
 			level:     RiskMedium,
 			wantMin:   5,
-			wantExact: "github_add_collaborator",
+			wantExact: "github_collaborators:add",
 		},
 		{
 			name:      "High risk operations",
 			level:     RiskHigh,
 			wantMin:   2,
-			wantExact: "github_delete_webhook",
+			wantExact: "github_webhooks:delete",
 		},
 		{
 			name:      "Critical risk operations",
 			level:     RiskCritical,
 			wantMin:   2,
-			wantExact: "github_delete_repository",
+			wantExact: "github_admin_repo:delete",
 		},
 	}
 
@@ -179,7 +179,6 @@ func TestGetOperationsByRiskLevel(t *testing.T) {
 					tt.level, len(operations), tt.wantMin)
 			}
 
-			// Check that expected operation exists
 			found := false
 			for _, op := range operations {
 				if op == tt.wantExact {
@@ -205,25 +204,25 @@ func TestGetOperationsByCategory(t *testing.T) {
 			name:      "Repository settings",
 			category:  "repository_settings",
 			wantMin:   2,
-			wantExact: "github_get_repo_settings",
+			wantExact: "github_admin_repo:get_settings",
 		},
 		{
 			name:      "Collaborators",
 			category:  "collaborators",
 			wantMin:   5,
-			wantExact: "github_add_collaborator",
+			wantExact: "github_collaborators:add",
 		},
 		{
 			name:      "Webhooks",
 			category:  "webhooks",
 			wantMin:   4,
-			wantExact: "github_create_webhook",
+			wantExact: "github_webhooks:create",
 		},
 		{
 			name:      "Branch protection",
 			category:  "branch_protection",
 			wantMin:   2,
-			wantExact: "github_get_branch_protection",
+			wantExact: "github_branch_protection:get",
 		},
 		{
 			name:      "Non-existent category",
@@ -259,39 +258,39 @@ func TestGetOperationsByCategory(t *testing.T) {
 }
 
 func TestOperationRiskCompleteness(t *testing.T) {
-	// Verify all expected admin operations are classified
+	// Verify all expected admin operations are classified (composite keys)
 	expectedOperations := []string{
 		// Repository Settings
-		"github_get_repo_settings",
-		"github_update_repo_settings",
-		"github_archive_repository",
-		"github_delete_repository",
+		"github_admin_repo:get_settings",
+		"github_admin_repo:update_settings",
+		"github_admin_repo:archive",
+		"github_admin_repo:delete",
 
 		// Branch Protection
-		"github_get_branch_protection",
-		"github_update_branch_protection",
-		"github_delete_branch_protection",
+		"github_branch_protection:get",
+		"github_branch_protection:update",
+		"github_branch_protection:delete",
 
 		// Webhooks
-		"github_list_webhooks",
-		"github_create_webhook",
-		"github_update_webhook",
-		"github_delete_webhook",
-		"github_test_webhook",
+		"github_webhooks:list",
+		"github_webhooks:create",
+		"github_webhooks:update",
+		"github_webhooks:delete",
+		"github_webhooks:test",
 
 		// Collaborators
-		"github_list_collaborators",
-		"github_add_collaborator",
-		"github_update_collaborator_permission",
-		"github_remove_collaborator",
-		"github_check_collaborator",
-		"github_list_invitations",
-		"github_accept_invitation",
-		"github_cancel_invitation",
+		"github_collaborators:list",
+		"github_collaborators:add",
+		"github_collaborators:update_permission",
+		"github_collaborators:remove",
+		"github_collaborators:check",
+		"github_collaborators:list_invitations",
+		"github_collaborators:accept_invitation",
+		"github_collaborators:cancel_invitation",
 
 		// Teams
-		"github_list_repo_teams",
-		"github_add_repo_team",
+		"github_collaborators:list_teams",
+		"github_collaborators:add_team",
 	}
 
 	for _, op := range expectedOperations {
@@ -302,7 +301,6 @@ func TestOperationRiskCompleteness(t *testing.T) {
 				return
 			}
 
-			// Verify risk has required fields
 			if risk.Category == "" {
 				t.Errorf("Operation %s has no category", op)
 			}

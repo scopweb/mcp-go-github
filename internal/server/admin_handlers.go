@@ -8,72 +8,88 @@ import (
 	"github.com/jotajotape/github-go-server-mcp/pkg/types"
 )
 
-// HandleAdminTool routes administrative tool calls through safety middleware
+// HandleAdminTool routes consolidated admin tool calls through safety middleware.
+// Uses composite key "toolName:operation" for risk classification.
 func HandleAdminTool(s *MCPServer, name string, arguments map[string]interface{}) (types.ToolCallResult, error) {
 	ctx := context.Background()
 
-	// Check if safety middleware is enabled
 	if s.Safety == nil {
 		return types.ToolCallResult{}, fmt.Errorf("safety middleware not initialized")
 	}
 
-	// Route to specific handler
+	operation, _ := arguments["operation"].(string)
+	if operation == "" {
+		return types.ToolCallResult{}, fmt.Errorf("parameter 'operation' required for %s", name)
+	}
+
 	switch name {
-	// Repository Settings
-	case "github_get_repo_settings":
-		return handleGetRepoSettings(s, ctx, arguments)
-	case "github_update_repo_settings":
-		return handleUpdateRepoSettings(s, ctx, arguments)
-	case "github_archive_repository":
-		return handleArchiveRepository(s, ctx, arguments)
-	case "github_delete_repository":
-		return handleDeleteRepository(s, ctx, arguments)
+	case "github_admin_repo":
+		switch operation {
+		case "get_settings":
+			return handleGetRepoSettings(s, ctx, arguments)
+		case "update_settings":
+			return handleUpdateRepoSettings(s, ctx, arguments)
+		case "archive":
+			return handleArchiveRepository(s, ctx, arguments)
+		case "delete":
+			return handleDeleteRepository(s, ctx, arguments)
+		default:
+			return types.ToolCallResult{}, fmt.Errorf("unknown operation '%s' for github_admin_repo", operation)
+		}
 
-	// Branch Protection
-	case "github_get_branch_protection":
-		return handleGetBranchProtection(s, ctx, arguments)
-	case "github_update_branch_protection":
-		return handleUpdateBranchProtection(s, ctx, arguments)
-	case "github_delete_branch_protection":
-		return handleDeleteBranchProtection(s, ctx, arguments)
+	case "github_branch_protection":
+		switch operation {
+		case "get":
+			return handleGetBranchProtection(s, ctx, arguments)
+		case "update":
+			return handleUpdateBranchProtection(s, ctx, arguments)
+		case "delete":
+			return handleDeleteBranchProtection(s, ctx, arguments)
+		default:
+			return types.ToolCallResult{}, fmt.Errorf("unknown operation '%s' for github_branch_protection", operation)
+		}
 
-	// Webhooks
-	case "github_list_webhooks":
-		return handleListWebhooks(s, ctx, arguments)
-	case "github_create_webhook":
-		return handleCreateWebhook(s, ctx, arguments)
-	case "github_update_webhook":
-		return handleUpdateWebhook(s, ctx, arguments)
-	case "github_delete_webhook":
-		return handleDeleteWebhook(s, ctx, arguments)
-	case "github_test_webhook":
-		return handleTestWebhook(s, ctx, arguments)
+	case "github_webhooks":
+		switch operation {
+		case "list":
+			return handleListWebhooks(s, ctx, arguments)
+		case "create":
+			return handleCreateWebhook(s, ctx, arguments)
+		case "update":
+			return handleUpdateWebhook(s, ctx, arguments)
+		case "delete":
+			return handleDeleteWebhook(s, ctx, arguments)
+		case "test":
+			return handleTestWebhook(s, ctx, arguments)
+		default:
+			return types.ToolCallResult{}, fmt.Errorf("unknown operation '%s' for github_webhooks", operation)
+		}
 
-	// Collaborators
-	case "github_list_collaborators":
-		return handleListCollaborators(s, ctx, arguments)
-	case "github_add_collaborator":
-		return handleAddCollaborator(s, ctx, arguments)
-	case "github_update_collaborator_permission":
-		return handleUpdateCollaboratorPermission(s, ctx, arguments)
-	case "github_remove_collaborator":
-		return handleRemoveCollaborator(s, ctx, arguments)
-	case "github_check_collaborator":
-		return handleCheckCollaborator(s, ctx, arguments)
-
-	// Invitations
-	case "github_list_invitations":
-		return handleListInvitations(s, ctx, arguments)
-	case "github_accept_invitation":
-		return handleAcceptInvitation(s, ctx, arguments)
-	case "github_cancel_invitation":
-		return handleCancelInvitation(s, ctx, arguments)
-
-	// Team Access
-	case "github_list_repo_teams":
-		return handleListRepoTeams(s, ctx, arguments)
-	case "github_add_repo_team":
-		return handleAddRepoTeam(s, ctx, arguments)
+	case "github_collaborators":
+		switch operation {
+		case "list":
+			return handleListCollaborators(s, ctx, arguments)
+		case "check":
+			return handleCheckCollaborator(s, ctx, arguments)
+		case "add":
+			return handleAddCollaborator(s, ctx, arguments)
+		case "update_permission":
+			return handleUpdateCollaboratorPermission(s, ctx, arguments)
+		case "remove":
+			return handleRemoveCollaborator(s, ctx, arguments)
+		case "list_invitations":
+			return handleListInvitations(s, ctx, arguments)
+		case "accept_invitation":
+			return handleAcceptInvitation(s, ctx, arguments)
+		case "cancel_invitation":
+			return handleCancelInvitation(s, ctx, arguments)
+		case "list_teams":
+			return handleListRepoTeams(s, ctx, arguments)
+		case "add_team":
+			return handleAddRepoTeam(s, ctx, arguments)
+		default:
+			return types.ToolCallResult{}, fmt.Errorf("unknown operation '%s' for github_collaborators", operation)
+		}
 
 	default:
 		return types.ToolCallResult{}, fmt.Errorf("unknown administrative tool: %s", name)
@@ -121,7 +137,7 @@ func handleUpdateRepoSettings(s *MCPServer, ctx context.Context, args map[string
 	repo, _ := args["repo"].(string)
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_update_repo_settings", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_admin_repo:update_settings", args, func() (string, error) {
 		// Build settings map from arguments
 		settings := make(map[string]interface{})
 		for key, value := range args {
@@ -144,7 +160,7 @@ func handleArchiveRepository(s *MCPServer, ctx context.Context, args map[string]
 	repo, _ := args["repo"].(string)
 
 	// CRITICAL risk - requires confirmation
-	return s.Safety.WrapExecution(ctx, "github_archive_repository", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_admin_repo:archive", args, func() (string, error) {
 		repository, err := s.AdminClient.ArchiveRepository(ctx, owner, repo)
 		if err != nil {
 			return "", err
@@ -159,7 +175,7 @@ func handleDeleteRepository(s *MCPServer, ctx context.Context, args map[string]i
 	repo, _ := args["repo"].(string)
 
 	// CRITICAL risk - requires confirmation + backup
-	return s.Safety.WrapExecution(ctx, "github_delete_repository", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_admin_repo:delete", args, func() (string, error) {
 		err := s.AdminClient.DeleteRepository(ctx, owner, repo)
 		if err != nil {
 			return "", err
@@ -204,7 +220,7 @@ func handleUpdateBranchProtection(s *MCPServer, ctx context.Context, args map[st
 	branch, _ := args["branch"].(string)
 
 	// HIGH risk - requires confirmation
-	return s.Safety.WrapExecution(ctx, "github_update_branch_protection", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_branch_protection:update", args, func() (string, error) {
 		// Build protection request
 		protectionReq := &github.ProtectionRequest{}
 
@@ -320,7 +336,7 @@ func handleDeleteBranchProtection(s *MCPServer, ctx context.Context, args map[st
 	branch, _ := args["branch"].(string)
 
 	// CRITICAL risk - requires confirmation
-	return s.Safety.WrapExecution(ctx, "github_delete_branch_protection", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_branch_protection:delete", args, func() (string, error) {
 		err := s.AdminClient.DeleteBranchProtection(ctx, owner, repo, branch)
 		if err != nil {
 			return "", err
@@ -361,7 +377,7 @@ func handleCreateWebhook(s *MCPServer, ctx context.Context, args map[string]inte
 	repo, _ := args["repo"].(string)
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_create_webhook", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_webhooks:create", args, func() (string, error) {
 		// Build config map from arguments
 		config := make(map[string]interface{})
 		if url, ok := args["url"]; ok {
@@ -410,7 +426,7 @@ func handleUpdateWebhook(s *MCPServer, ctx context.Context, args map[string]inte
 	}
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_update_webhook", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_webhooks:update", args, func() (string, error) {
 		// Build config map from arguments
 		config := make(map[string]interface{})
 		if url, ok := args["url"]; ok {
@@ -459,7 +475,7 @@ func handleDeleteWebhook(s *MCPServer, ctx context.Context, args map[string]inte
 	}
 
 	// HIGH risk - requires confirmation
-	return s.Safety.WrapExecution(ctx, "github_delete_webhook", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_webhooks:delete", args, func() (string, error) {
 		err := s.AdminClient.DeleteWebhook(ctx, owner, repo, hookID)
 		if err != nil {
 			return "", err
@@ -534,7 +550,7 @@ func handleAddCollaborator(s *MCPServer, ctx context.Context, args map[string]in
 	}
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_add_collaborator", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_collaborators:add", args, func() (string, error) {
 		invitation, err := s.AdminClient.AddCollaborator(ctx, owner, repo, username, permission)
 		if err != nil {
 			return "", err
@@ -557,7 +573,7 @@ func handleUpdateCollaboratorPermission(s *MCPServer, ctx context.Context, args 
 	permission, _ := args["permission"].(string)
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_update_collaborator_permission", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_collaborators:update_permission", args, func() (string, error) {
 		invitation, err := s.AdminClient.UpdateCollaboratorPermission(ctx, owner, repo, username, permission)
 		if err != nil {
 			return "", err
@@ -578,7 +594,7 @@ func handleRemoveCollaborator(s *MCPServer, ctx context.Context, args map[string
 	username, _ := args["username"].(string)
 
 	// HIGH risk - requires confirmation
-	return s.Safety.WrapExecution(ctx, "github_remove_collaborator", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_collaborators:remove", args, func() (string, error) {
 		err := s.AdminClient.RemoveCollaborator(ctx, owner, repo, username)
 		if err != nil {
 			return "", err
@@ -644,7 +660,7 @@ func handleAcceptInvitation(s *MCPServer, ctx context.Context, args map[string]i
 	}
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_accept_invitation", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_collaborators:accept_invitation", args, func() (string, error) {
 		err := s.AdminClient.AcceptInvitation(ctx, invitationID)
 		if err != nil {
 			return "", err
@@ -672,7 +688,7 @@ func handleCancelInvitation(s *MCPServer, ctx context.Context, args map[string]i
 	}
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_cancel_invitation", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_collaborators:cancel_invitation", args, func() (string, error) {
 		err := s.AdminClient.CancelInvitation(ctx, owner, repo, invitationID)
 		if err != nil {
 			return "", err
@@ -733,7 +749,7 @@ func handleAddRepoTeam(s *MCPServer, ctx context.Context, args map[string]interf
 	}
 
 	// MEDIUM risk - use safety middleware
-	return s.Safety.WrapExecution(ctx, "github_add_repo_team", args, func() (string, error) {
+	return s.Safety.WrapExecution(ctx, "github_collaborators:add_team", args, func() (string, error) {
 		err := s.AdminClient.AddRepositoryTeam(ctx, owner, repo, teamID, permission)
 		if err != nil {
 			return "", err

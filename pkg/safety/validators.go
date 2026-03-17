@@ -52,24 +52,24 @@ func getValidatorsForOperation(operation string) (map[string]Validator, error) {
 		validators["branch"] = validateBranchName
 	}
 
-	// Operation-specific validators
+	// Operation-specific validators (composite keys "tool:operation")
 	switch operation {
-	case "github_add_collaborator", "github_update_collaborator_permission":
+	case "github_collaborators:add", "github_collaborators:update_permission":
 		validators["permission"] = validatePermission
 
-	case "github_create_webhook", "github_update_webhook":
+	case "github_webhooks:create", "github_webhooks:update":
 		validators["url"] = validateURL
 		validators["content_type"] = validateContentType
 		validators["events"] = validateEvents
 
-	case "github_delete_webhook", "github_test_webhook":
+	case "github_webhooks:delete", "github_webhooks:test":
 		validators["hook_id"] = validatePositiveInteger
 
-	case "github_update_branch_protection":
+	case "github_branch_protection:update":
 		validators["required_approving_review_count"] = validateRequiredReviewCount
 		validators["enforce_admins"] = validateBoolean
 
-	case "github_update_repo_settings":
+	case "github_admin_repo:update_settings":
 		validators["visibility"] = validateVisibility
 		validators["has_issues"] = validateBoolean
 		validators["has_wiki"] = validateBoolean

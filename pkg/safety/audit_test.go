@@ -43,12 +43,12 @@ func TestAuditLogger_LogOperation(t *testing.T) {
 			name: "Successful operation",
 			entry: &AuditEntry{
 				Timestamp:       time.Now(),
-				Operation:       "github_add_collaborator",
+				Operation:       "github_collaborators:add",
 				RiskLevel:       "MEDIUM",
 				Arguments:       map[string]interface{}{"owner": "test", "repo": "demo"},
 				Result:          "success",
 				Changes:         []string{"Added collaborator @alice"},
-				RollbackCommand: "github_remove_collaborator --owner=test --repo=demo --username=alice",
+				RollbackCommand: "github_collaborators:remove --owner=test --repo=demo --username=alice",
 				ExecutionTimeMs: 123,
 			},
 		},
@@ -56,7 +56,7 @@ func TestAuditLogger_LogOperation(t *testing.T) {
 			name: "Failed operation",
 			entry: &AuditEntry{
 				Timestamp:       time.Now(),
-				Operation:       "github_delete_webhook",
+				Operation:       "github_webhooks:delete",
 				RiskLevel:       "HIGH",
 				Arguments:       map[string]interface{}{"owner": "test", "repo": "demo", "hook_id": 123},
 				Result:          "failed",
@@ -68,7 +68,7 @@ func TestAuditLogger_LogOperation(t *testing.T) {
 			name: "Operation with sensitive data",
 			entry: &AuditEntry{
 				Timestamp:       time.Now(),
-				Operation:       "github_create_webhook",
+				Operation:       "github_webhooks:create",
 				RiskLevel:       "MEDIUM",
 				Arguments:       map[string]interface{}{"secret": "webhook_secret_123"},
 				Result:          "success",

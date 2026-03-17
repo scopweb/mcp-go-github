@@ -24,21 +24,26 @@ func getGitHubClient(s *MCPServer) (*github.Client, error) {
 	return client, nil
 }
 
-// HandleFileTool routes file operation tool calls
+// HandleFileTool routes consolidated file operation tool calls by operation parameter
 func HandleFileTool(s *MCPServer, name string, args map[string]interface{}) (types.ToolCallResult, error) {
 	ctx := context.Background()
 
-	switch name {
-	case "github_list_repo_contents":
+	operation, _ := args["operation"].(string)
+	if operation == "" {
+		return types.ToolCallResult{}, fmt.Errorf("parameter 'operation' required for %s", name)
+	}
+
+	switch operation {
+	case "list":
 		return handleListRepoContents(s, ctx, args)
-	case "github_download_file":
+	case "download":
 		return handleDownloadFile(s, ctx, args)
-	case "github_download_repo":
+	case "download_repo":
 		return handleDownloadRepo(s, ctx, args)
-	case "github_pull_repo":
+	case "pull_repo":
 		return handlePullRepo(s, ctx, args)
 	default:
-		return types.ToolCallResult{}, fmt.Errorf("unknown file operation: %s", name)
+		return types.ToolCallResult{}, fmt.Errorf("unknown operation '%s' for github_files", operation)
 	}
 }
 

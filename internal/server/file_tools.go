@@ -3,63 +3,29 @@ package server
 import "github.com/jotajotape/github-go-server-mcp/pkg/types"
 
 // ListFileTools returns tools for GitHub file operations (no Git required)
+// Consolidated into 1 tool using the operation parameter pattern.
 func ListFileTools() []types.Tool {
 	return []types.Tool{
 		{
-			Name:        "github_list_repo_contents",
-			Description: "📂 List files and directories in a repository path (no Git required)",
+			Name:  "github_files",
+			Title: "GitHub File Operations",
+			Description: "File operations via GitHub API (no Git required). Operations: " +
+				"list (list files and directories at a repository path), " +
+				"download (download a single file to local disk, requires path), " +
+				"download_repo (download entire repository to a local directory), " +
+				"pull_repo (update local directory from repository, like a pull via API).",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"owner":  {Type: "string", Description: "Repository owner"},
-					"repo":   {Type: "string", Description: "Repository name"},
-					"path":   {Type: "string", Description: "Directory path (empty for root)"},
-					"branch": {Type: "string", Description: "Branch name (default: main)"},
-				},
-				Required: []string{"owner", "repo"},
-			},
-		},
-		{
-			Name:        "github_download_file",
-			Description: "⬇️ Download a single file from a repository to local disk (no Git required)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
+					"operation":  {Type: "string", Description: "Operation to perform: list, download, download_repo, pull_repo"},
 					"owner":      {Type: "string", Description: "Repository owner"},
 					"repo":       {Type: "string", Description: "Repository name"},
-					"path":       {Type: "string", Description: "File path in the repository"},
+					"path":       {Type: "string", Description: "File or directory path in the repository (for list and download)"},
 					"branch":     {Type: "string", Description: "Branch name (default: main)"},
-					"local_path": {Type: "string", Description: "Local path to save file (default: same as repo path)"},
+					"local_path": {Type: "string", Description: "Local path to save file (for download, default: same as repo path)"},
+					"local_dir":  {Type: "string", Description: "Local directory to save files (for download_repo/pull_repo, default: ./<repo>)"},
 				},
-				Required: []string{"owner", "repo", "path"},
-			},
-		},
-		{
-			Name:        "github_download_repo",
-			Description: "📦 Download entire repository to local directory (clone via API, no Git required)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"owner":     {Type: "string", Description: "Repository owner"},
-					"repo":      {Type: "string", Description: "Repository name"},
-					"branch":    {Type: "string", Description: "Branch to download (default: main)"},
-					"local_dir": {Type: "string", Description: "Local directory to save files (default: ./<repo>)"},
-				},
-				Required: []string{"owner", "repo"},
-			},
-		},
-		{
-			Name:        "github_pull_repo",
-			Description: "🔄 Update local directory from repository (pull via API, no Git required)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"owner":     {Type: "string", Description: "Repository owner"},
-					"repo":      {Type: "string", Description: "Repository name"},
-					"branch":    {Type: "string", Description: "Branch to pull from (default: main)"},
-					"local_dir": {Type: "string", Description: "Local directory to update (default: ./<repo>)"},
-				},
-				Required: []string{"owner", "repo"},
+				Required: []string{"operation", "owner", "repo"},
 			},
 		},
 	}
@@ -67,10 +33,5 @@ func ListFileTools() []types.Tool {
 
 // IsFileOperation checks if a tool name is a file operation
 func IsFileOperation(name string) bool {
-	switch name {
-	case "github_list_repo_contents", "github_download_file",
-		"github_download_repo", "github_pull_repo":
-		return true
-	}
-	return false
+	return name == "github_files"
 }

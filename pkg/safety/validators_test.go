@@ -463,7 +463,7 @@ func TestValidateParameters(t *testing.T) {
 	}{
 		{
 			name:      "Valid collaborator add",
-			operation: "github_add_collaborator",
+			operation: "github_collaborators:add",
 			params: map[string]interface{}{
 				"owner":      "test-owner",
 				"repo":       "test-repo",
@@ -474,7 +474,7 @@ func TestValidateParameters(t *testing.T) {
 		},
 		{
 			name:      "Invalid owner format",
-			operation: "github_add_collaborator",
+			operation: "github_collaborators:add",
 			params: map[string]interface{}{
 				"owner":      "../etc",
 				"repo":       "test-repo",
@@ -486,7 +486,7 @@ func TestValidateParameters(t *testing.T) {
 		},
 		{
 			name:      "Invalid permission",
-			operation: "github_add_collaborator",
+			operation: "github_collaborators:add",
 			params: map[string]interface{}{
 				"owner":      "test-owner",
 				"repo":       "test-repo",
@@ -498,7 +498,7 @@ func TestValidateParameters(t *testing.T) {
 		},
 		{
 			name:      "Valid webhook create",
-			operation: "github_create_webhook",
+			operation: "github_webhooks:create",
 			params: map[string]interface{}{
 				"owner":        "test-owner",
 				"repo":         "test-repo",
@@ -510,7 +510,7 @@ func TestValidateParameters(t *testing.T) {
 		},
 		{
 			name:      "Invalid webhook URL",
-			operation: "github_create_webhook",
+			operation: "github_webhooks:create",
 			params: map[string]interface{}{
 				"owner": "test-owner",
 				"repo":  "test-repo",

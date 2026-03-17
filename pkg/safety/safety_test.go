@@ -42,7 +42,7 @@ func TestNewEngine(t *testing.T) {
 			config: nil,
 		},
 		{
-			name:   "With custom config",
+			name: "With custom config",
 			config: &SafetyConfig{
 				Mode:                     SafetyModeStrict,
 				EnableAuditLog:           false,
@@ -95,7 +95,7 @@ func TestEngine_CheckOperation_SafetyDisabled(t *testing.T) {
 	ctx := context.Background()
 
 	// All operations should pass when safety is disabled
-	check, err := engine.CheckOperation(ctx, "github_delete_repository", map[string]interface{}{
+	check, err := engine.CheckOperation(ctx, "github_admin_repo:delete", map[string]interface{}{
 		"owner": "test",
 		"repo":  "demo",
 	})
@@ -123,36 +123,36 @@ func TestEngine_CheckOperation_ModeStrict(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name              string
-		operation         string
-		params            map[string]interface{}
-		wantDryRun        bool
-		wantConfirmation  bool
-		wantCanProceed    bool
+		name             string
+		operation        string
+		params           map[string]interface{}
+		wantDryRun       bool
+		wantConfirmation bool
+		wantCanProceed   bool
 	}{
 		{
-			name:              "Low risk - no restrictions",
-			operation:         "github_get_repo_settings",
-			params:            map[string]interface{}{"owner": "test", "repo": "demo"},
-			wantDryRun:        false,
-			wantConfirmation:  false,
-			wantCanProceed:    true,
+			name:             "Low risk - no restrictions",
+			operation:        "github_admin_repo:get_settings",
+			params:           map[string]interface{}{"owner": "test", "repo": "demo"},
+			wantDryRun:       false,
+			wantConfirmation: false,
+			wantCanProceed:   true,
 		},
 		{
-			name:              "Medium risk - requires dry-run",
-			operation:         "github_add_collaborator",
-			params:            map[string]interface{}{"owner": "test", "repo": "demo", "username": "alice", "permission": "push"},
-			wantDryRun:        true,
-			wantConfirmation:  true, // Strict mode requires confirmation for MEDIUM+
-			wantCanProceed:    false,
+			name:             "Medium risk - requires dry-run",
+			operation:        "github_collaborators:add",
+			params:           map[string]interface{}{"owner": "test", "repo": "demo", "username": "alice", "permission": "push"},
+			wantDryRun:       true,
+			wantConfirmation: true, // Strict mode requires confirmation for MEDIUM+
+			wantCanProceed:   false,
 		},
 		{
-			name:              "High risk - requires confirmation",
-			operation:         "github_delete_webhook",
-			params:            map[string]interface{}{"owner": "test", "repo": "demo", "hook_id": float64(123)},
-			wantDryRun:        true,
-			wantConfirmation:  true,
-			wantCanProceed:    false,
+			name:             "High risk - requires confirmation",
+			operation:        "github_webhooks:delete",
+			params:           map[string]interface{}{"owner": "test", "repo": "demo", "hook_id": float64(123)},
+			wantDryRun:       true,
+			wantConfirmation: true,
+			wantCanProceed:   false,
 		},
 	}
 
@@ -192,14 +192,14 @@ func TestEngine_CheckOperation_ModeModerate(t *testing.T) {
 	}{
 		{
 			name:             "Low risk",
-			operation:        "github_list_collaborators",
+			operation:        "github_collaborators:list",
 			params:           map[string]interface{}{"owner": "test", "repo": "demo"},
 			wantConfirmation: false,
 			wantCanProceed:   true,
 		},
 		{
 			name:      "Medium risk without dry_run param",
-			operation: "github_add_collaborator",
+			operation: "github_collaborators:add",
 			params: map[string]interface{}{
 				"owner":      "test",
 				"repo":       "demo",
@@ -211,7 +211,7 @@ func TestEngine_CheckOperation_ModeModerate(t *testing.T) {
 		},
 		{
 			name:      "Medium risk with dry_run=false",
-			operation: "github_add_collaborator",
+			operation: "github_collaborators:add",
 			params: map[string]interface{}{
 				"owner":      "test",
 				"repo":       "demo",
@@ -224,7 +224,7 @@ func TestEngine_CheckOperation_ModeModerate(t *testing.T) {
 		},
 		{
 			name:      "High risk without token",
-			operation: "github_remove_collaborator",
+			operation: "github_collaborators:remove",
 			params: map[string]interface{}{
 				"owner":    "test",
 				"repo":     "demo",
@@ -274,7 +274,7 @@ func TestEngine_CheckOperation_ModePermissive(t *testing.T) {
 	}{
 		{
 			name:      "Medium risk - no confirmation in permissive",
-			operation: "github_add_collaborator",
+			operation: "github_collaborators:add",
 			params: map[string]interface{}{
 				"owner":      "test",
 				"repo":       "demo",
@@ -286,7 +286,7 @@ func TestEngine_CheckOperation_ModePermissive(t *testing.T) {
 		},
 		{
 			name:      "High risk - no confirmation in permissive",
-			operation: "github_delete_webhook",
+			operation: "github_webhooks:delete",
 			params: map[string]interface{}{
 				"owner":   "test",
 				"repo":    "demo",
@@ -297,7 +297,7 @@ func TestEngine_CheckOperation_ModePermissive(t *testing.T) {
 		},
 		{
 			name:      "Critical risk - requires confirmation",
-			operation: "github_delete_repository",
+			operation: "github_admin_repo:delete",
 			params: map[string]interface{}{
 				"owner": "test",
 				"repo":  "demo",
@@ -354,7 +354,7 @@ func TestEngine_CheckOperation_ValidationFailure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			check, err := engine.CheckOperation(ctx, "github_add_collaborator", tt.params)
+			check, err := engine.CheckOperation(ctx, "github_collaborators:add", tt.params)
 
 			if err == nil {
 				t.Fatal("CheckOperation() should return error for invalid parameters")
@@ -378,7 +378,7 @@ func TestEngine_CheckOperation_WithConfirmationToken(t *testing.T) {
 	engine := NewEngine(nil) // Moderate mode
 	ctx := context.Background()
 
-	operation := "github_delete_webhook"
+	operation := "github_webhooks:delete"
 	params := map[string]interface{}{
 		"owner":   "test",
 		"repo":    "demo",
@@ -439,7 +439,7 @@ func TestEngine_LogOperationResult(t *testing.T) {
 	}
 	engine := NewEngine(config)
 
-	operation := "github_add_collaborator"
+	operation := "github_collaborators:add"
 	risk, _ := ClassifyOperation(operation)
 	params := map[string]interface{}{
 		"owner":      "test",
@@ -454,7 +454,7 @@ func TestEngine_LogOperationResult(t *testing.T) {
 		params,
 		"success",
 		[]string{"Added @alice to test/demo"},
-		"github_remove_collaborator --owner=test --repo=demo --username=alice",
+		"github_collaborators:remove --owner=test --repo=demo --username=alice",
 		100*time.Millisecond,
 		nil,
 	)
@@ -486,7 +486,7 @@ func TestEngine_PreviewOperation(t *testing.T) {
 	engine := NewEngine(nil)
 	ctx := context.Background()
 
-	operation := "github_delete_repository"
+	operation := "github_admin_repo:delete"
 	params := map[string]interface{}{
 		"owner": "test",
 		"repo":  "demo",
@@ -565,7 +565,7 @@ func TestEngine_CreateBackup(t *testing.T) {
 		"url": "https://example.com/webhook",
 	}
 
-	backupPath, err := engine.CreateBackup("github_delete_webhook", data)
+	backupPath, err := engine.CreateBackup("github_webhooks:delete", data)
 	if err != nil {
 		t.Fatalf("CreateBackup() error = %v", err)
 	}
@@ -574,7 +574,7 @@ func TestEngine_CreateBackup(t *testing.T) {
 		t.Error("Backup path should not be empty")
 	}
 
-	if !strings.Contains(backupPath, "github_delete_webhook") {
+	if !strings.Contains(backupPath, "github_webhooks") {
 		t.Error("Backup path should contain operation name")
 	}
 
@@ -592,29 +592,29 @@ func TestFormatRollbackCommand(t *testing.T) {
 	}{
 		{
 			name:      "Add collaborator",
-			operation: "github_add_collaborator",
+			operation: "github_collaborators:add",
 			params: map[string]interface{}{
 				"owner":      "test",
 				"repo":       "demo",
 				"username":   "alice",
 				"permission": "push",
 			},
-			wantSubstr: "github_remove_collaborator",
+			wantSubstr: "github_collaborators:remove",
 		},
 		{
 			name:      "Create webhook",
-			operation: "github_create_webhook",
+			operation: "github_webhooks:create",
 			params: map[string]interface{}{
 				"owner":   "test",
 				"repo":    "demo",
 				"hook_id": 123,
 			},
-			wantSubstr: "github_delete_webhook",
+			wantSubstr: "github_webhooks:delete",
 		},
 		{
-			name:      "Unknown operation",
-			operation: "github_unknown_op",
-			params:    map[string]interface{}{},
+			name:       "Unknown operation",
+			operation:  "github_unknown:op",
+			params:     map[string]interface{}{},
 			wantSubstr: "No automatic rollback",
 		},
 	}

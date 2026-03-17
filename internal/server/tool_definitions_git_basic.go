@@ -2,17 +2,17 @@ package server
 
 import "github.com/jotajotape/github-go-server-mcp/pkg/types"
 
-// ListGitBasicTools retorna las herramientas Git locales básicas
+// ListGitBasicTools returns the core Git workflow tools (kept individual for fast access)
 func ListGitBasicTools() []types.Tool {
 	return []types.Tool{
 		{
 			Name:        "git_init",
-			Description: "Inicializa un nuevo repositorio Git en el directorio especificado",
+			Description: "Initialize a new Git repository in specified directory",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"path":           {Type: "string", Description: "Ruta del directorio donde inicializar el repo (debe existir)"},
-					"initial_branch": {Type: "string", Description: "Nombre de la rama inicial (defecto: main)"},
+					"path":           {Type: "string", Description: "Directory path to initialize (must exist)"},
+					"initial_branch": {Type: "string", Description: "Initial branch name (default: main)"},
 				},
 				Required: []string{"path"},
 			},
@@ -20,56 +20,24 @@ func ListGitBasicTools() []types.Tool {
 		},
 		{
 			Name:        "git_add",
-			Description: "Agrega archivos al staging area (requiere Git local)",
+			Description: "Stage files for commit (use . for all files)",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"files": {Type: "string", Description: "Archivos a agregar (. para todos)"},
+					"files": {Type: "string", Description: "Files to stage (. for all)"},
 				},
 				Required: []string{"files"},
 			},
 		},
 		{
 			Name:        "git_commit",
-			Description: "Hace commit de los cambios en staging (requiere Git local)",
+			Description: "Commit staged changes with a message",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"message": {Type: "string", Description: "Mensaje del commit"},
+					"message": {Type: "string", Description: "Commit message"},
 				},
 				Required: []string{"message"},
-			},
-		},
-		{
-			Name:        "git_push",
-			Description: "Sube cambios al repositorio remoto (requiere Git local)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"branch": {Type: "string", Description: "Rama a subir (opcional, usa actual)"},
-				},
-			},
-		},
-		{
-			Name:        "git_pull",
-			Description: "Baja cambios del repositorio remoto (requiere Git local)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"branch": {Type: "string", Description: "Rama a bajar (opcional, usa actual)"},
-				},
-			},
-		},
-		{
-			Name:        "git_checkout",
-			Description: "Cambia de rama o crea nueva rama (requiere Git local)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"branch": {Type: "string", Description: "Nombre de la rama"},
-					"create": {Type: "boolean", Description: "Crear nueva rama"},
-				},
-				Required: []string{"branch"},
 			},
 		},
 	}

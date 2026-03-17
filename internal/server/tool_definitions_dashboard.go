@@ -2,83 +2,32 @@ package server
 
 import "github.com/jotajotape/github-go-server-mcp/pkg/types"
 
-// ListDashboardTools retorna las herramientas de GitHub Dashboard
+// ListDashboardTools returns the consolidated GitHub dashboard tool
 func ListDashboardTools() []types.Tool {
 	return []types.Tool{
 		{
-			Name:        "github_dashboard",
-			Description: "📊 Dashboard completo: notificaciones, issues asignadas, PRs pendientes, alertas de seguridad, workflows fallidos",
+			Name: "github_dashboard",
+			Description: "GitHub dashboard and notifications. Operations: " +
+				"full (complete dashboard: notifications, issues, PRs, security, workflows; optional owner, repo), " +
+				"notifications (pending notifications; optional all, participating), " +
+				"issues (issues assigned to you; optional state: open/closed/all), " +
+				"prs_review (PRs pending your review), " +
+				"security (security alerts: Dependabot, Secret, Code scanning; requires owner, repo; optional type: dependabot/secret/code/all), " +
+				"workflows (failed GitHub Actions workflows; requires owner, repo), " +
+				"mark_read (mark notification as read; requires thread_id).",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"owner": {Type: "string", Description: "Propietario del repositorio (opcional para alertas de seguridad)"},
-					"repo":  {Type: "string", Description: "Nombre del repositorio (opcional para alertas de seguridad)"},
+					"operation":     {Type: "string", Description: "Operation: full, notifications, issues, prs_review, security, workflows, mark_read"},
+					"owner":         {Type: "string", Description: "Repository owner (for full, security, workflows)"},
+					"repo":          {Type: "string", Description: "Repository name (for full, security, workflows)"},
+					"all":           {Type: "boolean", Description: "Include read notifications (for notifications)"},
+					"participating": {Type: "boolean", Description: "Only participating notifications (for notifications)"},
+					"state":         {Type: "string", Description: "Issue state: open, closed, all (for issues, default: open)"},
+					"type":          {Type: "string", Description: "Alert type: dependabot, secret, code, all (for security, default: all)"},
+					"thread_id":     {Type: "string", Description: "Notification thread ID (for mark_read)"},
 				},
-			},
-		},
-		{
-			Name:        "github_notifications",
-			Description: "🔔 Lista notificaciones pendientes de GitHub",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"all":           {Type: "boolean", Description: "Incluir notificaciones leídas"},
-					"participating": {Type: "boolean", Description: "Solo notificaciones donde participas"},
-				},
-			},
-		},
-		{
-			Name:        "github_assigned_issues",
-			Description: "📋 Issues asignadas a ti pendientes de resolver",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"state": {Type: "string", Description: "Estado: open, closed, all (default: open)"},
-				},
-			},
-		},
-		{
-			Name:        "github_prs_to_review",
-			Description: "👀 Pull Requests pendientes de tu revisión",
-			InputSchema: types.ToolInputSchema{
-				Type:       "object",
-				Properties: map[string]types.Property{},
-			},
-		},
-		{
-			Name:        "github_security_alerts",
-			Description: "🛡️ Alertas de seguridad: Dependabot, Secret Scanning, Code Scanning",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"owner": {Type: "string", Description: "Propietario del repositorio"},
-					"repo":  {Type: "string", Description: "Nombre del repositorio"},
-					"type":  {Type: "string", Description: "Tipo: dependabot, secret, code, all (default: all)"},
-				},
-				Required: []string{"owner", "repo"},
-			},
-		},
-		{
-			Name:        "github_failed_workflows",
-			Description: "❌ Workflows de GitHub Actions fallidos recientemente",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"owner": {Type: "string", Description: "Propietario del repositorio"},
-					"repo":  {Type: "string", Description: "Nombre del repositorio"},
-				},
-				Required: []string{"owner", "repo"},
-			},
-		},
-		{
-			Name:        "github_mark_notification_read",
-			Description: "✅ Marca una notificación como leída",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"thread_id": {Type: "string", Description: "ID del thread de la notificación"},
-				},
-				Required: []string{"thread_id"},
+				Required: []string{"operation"},
 			},
 		},
 	}

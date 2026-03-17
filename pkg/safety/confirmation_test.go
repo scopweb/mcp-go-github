@@ -18,7 +18,7 @@ func TestGenerateConfirmationToken(t *testing.T) {
 	}{
 		{
 			name:      "High risk operation",
-			operation: "github_delete_webhook",
+			operation: "github_webhooks:delete",
 			parameters: map[string]interface{}{
 				"owner":   "test-owner",
 				"repo":    "test-repo",
@@ -28,7 +28,7 @@ func TestGenerateConfirmationToken(t *testing.T) {
 		},
 		{
 			name:      "Critical operation",
-			operation: "github_delete_repository",
+			operation: "github_admin_repo:delete",
 			parameters: map[string]interface{}{
 				"owner": "test-owner",
 				"repo":  "test-repo",
@@ -83,7 +83,7 @@ func TestValidateConfirmationToken(t *testing.T) {
 	// Clear tokens before test
 	ClearAllTokens()
 
-	operation := "github_delete_webhook"
+	operation := "github_webhooks:delete"
 	parameters := map[string]interface{}{
 		"owner":   "test-owner",
 		"repo":    "test-repo",
@@ -224,14 +224,14 @@ func TestGetConfirmationMessage(t *testing.T) {
 			riskLevel:     RiskHigh,
 			wantEmoji:     "⚠️",
 			wantRiskLevel: "HIGH",
-			operation:     "github_delete_webhook",
+			operation:     "github_webhooks:delete",
 		},
 		{
 			name:          "Critical risk",
 			riskLevel:     RiskCritical,
 			wantEmoji:     "💣",
 			wantRiskLevel: "CRITICAL",
-			operation:     "github_delete_repository",
+			operation:     "github_admin_repo:delete",
 		},
 	}
 
@@ -483,7 +483,7 @@ func TestTokenUniqueness(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		token, err := GenerateConfirmationToken("github_delete_repository", params, RiskCritical)
+		token, err := GenerateConfirmationToken("github_admin_repo:delete", params, RiskCritical)
 		if err != nil {
 			t.Fatalf("Failed to generate token %d: %v", i, err)
 		}

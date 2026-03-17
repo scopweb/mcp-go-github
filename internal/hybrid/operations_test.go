@@ -24,22 +24,41 @@ type mockGitOperations struct {
 	remoteURL           string
 	createFileFunc      func(path, content string) (string, error)
 	updateFileFunc      func(path, content, sha string) (string, error)
+	addFunc             func(path string) (string, error)
+	commitFunc          func(message string) (string, error)
+	pushFunc            func(branch string) (string, error)
 	branchListFunc      func(remote bool) ([]types.BranchInfo, error)
 	setWorkspaceFunc    func(path string) (string, error)
 	getFileSHAFunc      func(path string) (string, error)
 	GetChangedFilesFunc func(staged bool) (string, error)
+	initFunc            func(path string, branch string) (string, error)
 }
 
-func (m *mockGitOperations) HasGit() bool                    { return m.hasGit }
-func (m *mockGitOperations) IsGitRepo() bool                 { return m.isGitRepo }
-func (m *mockGitOperations) GetRepoPath() string             { return m.repoPath }
-func (m *mockGitOperations) GetCurrentBranch() string        { return m.currentBranch }
-func (m *mockGitOperations) GetRemoteURL() string            { return m.remoteURL }
-func (m *mockGitOperations) Status() (string, error)         { return "mock status", nil }
-func (m *mockGitOperations) Add(_ string) (string, error)    { return "mock add", nil }
-func (m *mockGitOperations) Commit(_ string) (string, error) { return "mock commit", nil }
-func (m *mockGitOperations) Push(_ string) (string, error)   { return "mock push", nil }
-func (m *mockGitOperations) Pull(_ string) (string, error)   { return "mock pull", nil }
+func (m *mockGitOperations) HasGit() bool             { return m.hasGit }
+func (m *mockGitOperations) IsGitRepo() bool          { return m.isGitRepo }
+func (m *mockGitOperations) GetRepoPath() string      { return m.repoPath }
+func (m *mockGitOperations) GetCurrentBranch() string { return m.currentBranch }
+func (m *mockGitOperations) GetRemoteURL() string     { return m.remoteURL }
+func (m *mockGitOperations) Status() (string, error)  { return "mock status", nil }
+func (m *mockGitOperations) Add(path string) (string, error) {
+	if m.addFunc != nil {
+		return m.addFunc(path)
+	}
+	return "mock add", nil
+}
+func (m *mockGitOperations) Commit(message string) (string, error) {
+	if m.commitFunc != nil {
+		return m.commitFunc(message)
+	}
+	return "mock commit", nil
+}
+func (m *mockGitOperations) Push(branch string) (string, error) {
+	if m.pushFunc != nil {
+		return m.pushFunc(branch)
+	}
+	return "mock push", nil
+}
+func (m *mockGitOperations) Pull(_ string) (string, error) { return "mock pull", nil }
 func (m *mockGitOperations) Checkout(_ string, _ bool) (string, error) {
 	return "mock checkout", nil
 }
@@ -97,6 +116,14 @@ func (m *mockGitOperations) GetChangedFiles(staged bool) (string, error) {
 		return m.GetChangedFilesFunc(staged)
 	}
 	return "mock changed files", nil
+}
+
+// Repository initialization
+func (m *mockGitOperations) Init(path string, initialBranch string) (string, error) {
+	if m.initFunc != nil {
+		return m.initFunc(path, initialBranch)
+	}
+	return "mock init", nil
 }
 
 // Advanced branch operations
@@ -417,5 +444,266 @@ func TestSmartUpdateFile(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, result, "📡 ARCHIVO ACTUALIZADO CON GITHUB API")
 		assert.Contains(t, result, "uvwxyz")
+	})
+}
+
+func TestPushFiles(t *testing.T) {
+	t.Run("Batch write, commit and push", func(t *testing.T) {
+		tmpDir, err := os.MkdirTemp("", "pushfiles")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
+
+		existingPath := filepath.Join(tmpDir, "existing.txt")
+		assert.NoError(t, os.MkdirAll(filepath.Dir(existingPath), 0755))
+		assert.NoError(t, os.WriteFile(existingPath, []byte("old"), 0600))
+
+		mockGit := &mockGitOperations{
+			hasGit:        true,
+			isGitRepo:     true,
+			repoPath:      tmpDir,
+			currentBranch: "main",
+			createFileFunc: func(path, content string) (string, error) {
+				assert.Equal(t, "new/new.txt", path)
+				assert.Equal(t, "new content", content)
+				return "created", nil
+			},
+			updateFileFunc: func(path, content, _ string) (string, error) {
+				assert.Equal(t, "existing.txt", path)
+				assert.Equal(t, "updated content", content)
+				return "updated", nil
+			},
+			addFunc: func(path string) (string, error) {
+				assert.Equal(t, "-A", path)
+				return "added", nil
+			},
+			commitFunc: func(message string) (string, error) {
+				assert.Equal(t, "feat: batch push", message)
+				return "committed", nil
+			},
+			pushFunc: func(branch string) (string, error) {
+				assert.Equal(t, "main", branch)
+				return "pushed", nil
+			},
+		}
+
+		args := map[string]interface{}{
+			"files": []interface{}{
+				map[string]interface{}{"path": "new/new.txt", "content": "new content"},
+				map[string]interface{}{"path": "existing.txt", "content": "updated content"},
+			},
+			"message": "feat: batch push",
+		}
+
+		result, err := PushFiles(mockGit, args)
+		assert.NoError(t, err)
+		assert.Contains(t, result, "Creados: new/new.txt")
+		assert.Contains(t, result, "Actualizados: existing.txt")
+		assert.Contains(t, result, "git push (main)")
+	})
+
+	t.Run("Fails when Git is not available", func(t *testing.T) {
+		mockGit := &mockGitOperations{}
+		args := map[string]interface{}{
+			"files":   []interface{}{map[string]interface{}{"path": "a.txt", "content": "x"}},
+			"message": "test",
+		}
+
+		_, err := PushFiles(mockGit, args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "git no disponible")
+	})
+
+	t.Run("Validates files payload", func(t *testing.T) {
+		mockGit := &mockGitOperations{hasGit: true, isGitRepo: true, repoPath: "/tmp"}
+		args := map[string]interface{}{
+			"files":   []interface{}{},
+			"message": "test",
+		}
+
+		_, err := PushFiles(mockGit, args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "se requiere 'files' o 'paths'")
+	})
+
+	t.Run("source_path reads file from disk", func(t *testing.T) {
+		tmpDir, err := os.MkdirTemp("", "pushfiles-src")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
+
+		// Create source file on disk
+		srcFile := filepath.Join(tmpDir, "source.php")
+		assert.NoError(t, os.WriteFile(srcFile, []byte("<?php echo 'hello'; ?>"), 0600))
+
+		repoDir, err := os.MkdirTemp("", "pushfiles-repo")
+		assert.NoError(t, err)
+		defer os.RemoveAll(repoDir)
+
+		var capturedContent string
+		mockGit := &mockGitOperations{
+			hasGit:        true,
+			isGitRepo:     true,
+			repoPath:      repoDir,
+			currentBranch: "main",
+			createFileFunc: func(path, content string) (string, error) {
+				capturedContent = content
+				return "created", nil
+			},
+			addFunc:    func(_ string) (string, error) { return "added", nil },
+			commitFunc: func(_ string) (string, error) { return "committed", nil },
+			pushFunc:   func(_ string) (string, error) { return "pushed", nil },
+		}
+
+		args := map[string]interface{}{
+			"files": []interface{}{
+				map[string]interface{}{
+					"path":        "includes/plugin.php",
+					"source_path": srcFile,
+				},
+			},
+			"message": "feat: add plugin from source_path",
+		}
+
+		result, err := PushFiles(mockGit, args)
+		assert.NoError(t, err)
+		assert.Equal(t, "<?php echo 'hello'; ?>", capturedContent)
+		assert.Contains(t, result, "Creados: includes/plugin.php")
+	})
+
+	t.Run("source_path error when file not found", func(t *testing.T) {
+		mockGit := &mockGitOperations{
+			hasGit:        true,
+			isGitRepo:     true,
+			repoPath:      "/tmp",
+			currentBranch: "main",
+		}
+
+		args := map[string]interface{}{
+			"files": []interface{}{
+				map[string]interface{}{
+					"path":        "dest.txt",
+					"source_path": "/nonexistent/file.txt",
+				},
+			},
+			"message": "test",
+		}
+
+		_, err := PushFiles(mockGit, args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "source_path")
+	})
+
+	t.Run("paths mode stages existing files", func(t *testing.T) {
+		tmpDir, err := os.MkdirTemp("", "pushfiles-paths")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
+
+		// Create files in the workspace
+		assert.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "includes"), 0755))
+		assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "includes", "main.php"), []byte("php"), 0600))
+		assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "style.css"), []byte("css"), 0600))
+
+		var addedPaths string
+		mockGit := &mockGitOperations{
+			hasGit:        true,
+			isGitRepo:     true,
+			repoPath:      tmpDir,
+			currentBranch: "main",
+			addFunc: func(path string) (string, error) {
+				addedPaths = path
+				return "added", nil
+			},
+			commitFunc: func(_ string) (string, error) { return "committed", nil },
+			pushFunc:   func(_ string) (string, error) { return "pushed", nil },
+		}
+
+		args := map[string]interface{}{
+			"paths":   []interface{}{"includes/main.php", "style.css"},
+			"message": "feat: stage existing files",
+		}
+
+		result, err := PushFiles(mockGit, args)
+		assert.NoError(t, err)
+		assert.Contains(t, addedPaths, "includes/main.php")
+		assert.Contains(t, addedPaths, "style.css")
+		assert.Contains(t, result, "Staged: includes/main.php, style.css")
+		assert.Contains(t, result, "2 archivo(s) procesados")
+	})
+
+	t.Run("paths mode error when file not in workspace", func(t *testing.T) {
+		tmpDir, err := os.MkdirTemp("", "pushfiles-paths-err")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
+
+		mockGit := &mockGitOperations{
+			hasGit:        true,
+			isGitRepo:     true,
+			repoPath:      tmpDir,
+			currentBranch: "main",
+		}
+
+		args := map[string]interface{}{
+			"paths":   []interface{}{"nonexistent.txt"},
+			"message": "test",
+		}
+
+		_, err = PushFiles(mockGit, args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no existe en el workspace")
+	})
+
+	t.Run("files and paths combined", func(t *testing.T) {
+		tmpDir, err := os.MkdirTemp("", "pushfiles-combined")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
+
+		// Existing file for paths mode
+		assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "existing.css"), []byte("css"), 0600))
+
+		mockGit := &mockGitOperations{
+			hasGit:        true,
+			isGitRepo:     true,
+			repoPath:      tmpDir,
+			currentBranch: "main",
+			createFileFunc: func(path, content string) (string, error) {
+				return "created", nil
+			},
+			addFunc:    func(_ string) (string, error) { return "added", nil },
+			commitFunc: func(_ string) (string, error) { return "committed", nil },
+			pushFunc:   func(_ string) (string, error) { return "pushed", nil },
+		}
+
+		args := map[string]interface{}{
+			"files": []interface{}{
+				map[string]interface{}{"path": "new.txt", "content": "hello"},
+			},
+			"paths":   []interface{}{"existing.css"},
+			"message": "feat: combined mode",
+		}
+
+		result, err := PushFiles(mockGit, args)
+		assert.NoError(t, err)
+		assert.Contains(t, result, "Creados: new.txt")
+		assert.Contains(t, result, "Staged: existing.css")
+		assert.Contains(t, result, "2 archivo(s) procesados")
+	})
+
+	t.Run("file requires content or source_path", func(t *testing.T) {
+		mockGit := &mockGitOperations{
+			hasGit:        true,
+			isGitRepo:     true,
+			repoPath:      "/tmp",
+			currentBranch: "main",
+		}
+
+		args := map[string]interface{}{
+			"files": []interface{}{
+				map[string]interface{}{"path": "test.txt"},
+			},
+			"message": "test",
+		}
+
+		_, err := PushFiles(mockGit, args)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "'content' o 'source_path'")
 	})
 }

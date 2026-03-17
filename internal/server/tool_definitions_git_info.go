@@ -2,88 +2,32 @@ package server
 
 import "github.com/jotajotape/github-go-server-mcp/pkg/types"
 
-// ListGitInfoTools retorna las herramientas de información Git
+// ListGitInfoTools returns consolidated Git information tools
 func ListGitInfoTools() []types.Tool {
 	return []types.Tool{
 		{
-			Name:        "git_status",
-			Description: "Muestra el estado del repositorio Git local y configuración",
+			Name:        "git_info",
+			Description: "Git repository information and queries. Operations: status (repo state and config), file_sha (get SHA of a file), last_commit (latest commit SHA), file_content (read file at ref), changed_files (modified files list), validate_repo (check if valid git repo), list_files (all tracked files), context (auto-detect Git local vs API mode), validate_clean (check for uncommitted changes)",
 			InputSchema: types.ToolInputSchema{
-				Type:       "object",
-				Properties: map[string]types.Property{},
+				Type: "object",
+				Properties: map[string]types.Property{
+					"operation": {Type: "string", Description: "Operation: status, file_sha, last_commit, file_content, changed_files, validate_repo, list_files, context, validate_clean"},
+					"path":      {Type: "string", Description: "File or directory path (for file_sha, file_content, validate_repo)"},
+					"ref":       {Type: "string", Description: "Git reference - branch, commit, tag (for file_content, list_files). Default: HEAD"},
+					"staged":    {Type: "boolean", Description: "Show staged files instead of working directory (for changed_files)"},
+				},
+				Required: []string{"operation"},
 			},
 		},
 		{
 			Name:        "git_set_workspace",
-			Description: "🔧 Configura el directorio de trabajo para operaciones Git",
+			Description: "Set working directory for all Git operations",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"path": {Type: "string", Description: "Ruta del directorio del repositorio Git"},
+					"path": {Type: "string", Description: "Path to Git repository directory"},
 				},
 				Required: []string{"path"},
-			},
-		},
-		{
-			Name:        "git_get_file_sha",
-			Description: "🔑 Obtiene el SHA de un archivo específico desde Git",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"path": {Type: "string", Description: "Ruta del archivo"},
-				},
-				Required: []string{"path"},
-			},
-		},
-		{
-			Name:        "git_get_last_commit",
-			Description: "🔑 Obtiene el SHA del último commit",
-			InputSchema: types.ToolInputSchema{
-				Type:       "object",
-				Properties: map[string]types.Property{},
-			},
-		},
-		{
-			Name:        "git_get_file_content",
-			Description: "📄 Obtiene el contenido de un archivo desde Git",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"path": {Type: "string", Description: "Ruta del archivo"},
-					"ref":  {Type: "string", Description: "Referencia Git (branch, commit, tag). Default: HEAD"},
-				},
-				Required: []string{"path"},
-			},
-		},
-		{
-			Name:        "git_get_changed_files",
-			Description: "📋 Lista archivos modificados en working directory o staging area",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"staged": {Type: "boolean", Description: "Mostrar archivos en staging (true) o working directory (false)"},
-				},
-			},
-		},
-		{
-			Name:        "git_validate_repo",
-			Description: "✅ Valida si un directorio es un repositorio Git válido",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"path": {Type: "string", Description: "Ruta del directorio a validar"},
-				},
-				Required: []string{"path"},
-			},
-		},
-		{
-			Name:        "git_list_files",
-			Description: "📄 Lista todos los archivos en el repositorio Git",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"ref": {Type: "string", Description: "Referencia Git (branch, commit, tag). Default: HEAD"},
-				},
 			},
 		},
 	}

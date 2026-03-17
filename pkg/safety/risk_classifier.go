@@ -1,6 +1,8 @@
 // Package safety provides security filters and risk classification for administrative operations.
 package safety
 
+import "strings"
+
 // RiskLevel represents the danger level of an operation
 type RiskLevel int
 
@@ -45,10 +47,18 @@ type OperationRisk struct {
 	Description          string
 }
 
-// operationRiskMap defines the risk classification for all administrative operations
+// adminToolNames lists the consolidated admin tool names for IsAdminOperation checks
+var adminToolNames = map[string]bool{
+	"github_admin_repo":       true,
+	"github_branch_protection": true,
+	"github_webhooks":          true,
+	"github_collaborators":     true,
+}
+
+// operationRiskMap defines the risk classification using composite keys "tool:operation"
 var operationRiskMap = map[string]OperationRisk{
-	// Repository Settings - Read operations
-	"github_get_repo_settings": {
+	// github_admin_repo operations
+	"github_admin_repo:get_settings": {
 		Level:                RiskLow,
 		RequiresDryRun:       false,
 		RequiresConfirmation: false,
@@ -57,36 +67,7 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "repository_settings",
 		Description:          "View repository configuration",
 	},
-	"github_list_webhooks": {
-		Level:                RiskLow,
-		RequiresDryRun:       false,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "webhooks",
-		Description:          "List repository webhooks",
-	},
-	"github_test_webhook": {
-		Level:                RiskLow,
-		RequiresDryRun:       false,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "webhooks",
-		Description:          "Trigger webhook test delivery",
-	},
-	"github_get_branch_protection": {
-		Level:                RiskLow,
-		RequiresDryRun:       false,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "branch_protection",
-		Description:          "View branch protection rules",
-	},
-
-	// Repository Settings - Write operations (MEDIUM)
-	"github_update_repo_settings": {
+	"github_admin_repo:update_settings": {
 		Level:                RiskMedium,
 		RequiresDryRun:       true,
 		RequiresConfirmation: false,
@@ -95,54 +76,7 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "repository_settings",
 		Description:          "Modify repository configuration",
 	},
-	"github_create_webhook": {
-		Level:                RiskMedium,
-		RequiresDryRun:       true,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "webhooks",
-		Description:          "Create repository webhook",
-	},
-	"github_update_webhook": {
-		Level:                RiskMedium,
-		RequiresDryRun:       true,
-		RequiresConfirmation: false,
-		RequiresBackup:       true,
-		RequiresAudit:        true,
-		Category:             "webhooks",
-		Description:          "Modify webhook configuration",
-	},
-
-	// Repository Settings - Destructive operations (HIGH/CRITICAL)
-	"github_delete_webhook": {
-		Level:                RiskHigh,
-		RequiresDryRun:       true,
-		RequiresConfirmation: true,
-		RequiresBackup:       true,
-		RequiresAudit:        true,
-		Category:             "webhooks",
-		Description:          "Delete webhook (breaks integrations)",
-	},
-	"github_update_branch_protection": {
-		Level:                RiskHigh,
-		RequiresDryRun:       true,
-		RequiresConfirmation: true,
-		RequiresBackup:       true,
-		RequiresAudit:        true,
-		Category:             "branch_protection",
-		Description:          "Configure branch protection rules",
-	},
-	"github_delete_branch_protection": {
-		Level:                RiskCritical,
-		RequiresDryRun:       true,
-		RequiresConfirmation: true,
-		RequiresBackup:       true,
-		RequiresAudit:        true,
-		Category:             "branch_protection",
-		Description:          "Remove branch protection (dangerous)",
-	},
-	"github_archive_repository": {
+	"github_admin_repo:archive": {
 		Level:                RiskCritical,
 		RequiresDryRun:       true,
 		RequiresConfirmation: true,
@@ -151,7 +85,7 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "repository_lifecycle",
 		Description:          "Archive repository (difficult to reverse)",
 	},
-	"github_delete_repository": {
+	"github_admin_repo:delete": {
 		Level:                RiskCritical,
 		RequiresDryRun:       true,
 		RequiresConfirmation: true,
@@ -161,8 +95,84 @@ var operationRiskMap = map[string]OperationRisk{
 		Description:          "Delete repository PERMANENTLY",
 	},
 
-	// Collaborator Management - Read operations (LOW)
-	"github_list_collaborators": {
+	// github_branch_protection operations
+	"github_branch_protection:get": {
+		Level:                RiskLow,
+		RequiresDryRun:       false,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "branch_protection",
+		Description:          "View branch protection rules",
+	},
+	"github_branch_protection:update": {
+		Level:                RiskHigh,
+		RequiresDryRun:       true,
+		RequiresConfirmation: true,
+		RequiresBackup:       true,
+		RequiresAudit:        true,
+		Category:             "branch_protection",
+		Description:          "Configure branch protection rules",
+	},
+	"github_branch_protection:delete": {
+		Level:                RiskCritical,
+		RequiresDryRun:       true,
+		RequiresConfirmation: true,
+		RequiresBackup:       true,
+		RequiresAudit:        true,
+		Category:             "branch_protection",
+		Description:          "Remove branch protection (dangerous)",
+	},
+
+	// github_webhooks operations
+	"github_webhooks:list": {
+		Level:                RiskLow,
+		RequiresDryRun:       false,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "webhooks",
+		Description:          "List repository webhooks",
+	},
+	"github_webhooks:create": {
+		Level:                RiskMedium,
+		RequiresDryRun:       true,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "webhooks",
+		Description:          "Create repository webhook",
+	},
+	"github_webhooks:update": {
+		Level:                RiskMedium,
+		RequiresDryRun:       true,
+		RequiresConfirmation: false,
+		RequiresBackup:       true,
+		RequiresAudit:        true,
+		Category:             "webhooks",
+		Description:          "Modify webhook configuration",
+	},
+	"github_webhooks:delete": {
+		Level:                RiskHigh,
+		RequiresDryRun:       true,
+		RequiresConfirmation: true,
+		RequiresBackup:       true,
+		RequiresAudit:        true,
+		Category:             "webhooks",
+		Description:          "Delete webhook (breaks integrations)",
+	},
+	"github_webhooks:test": {
+		Level:                RiskLow,
+		RequiresDryRun:       false,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "webhooks",
+		Description:          "Trigger webhook test delivery",
+	},
+
+	// github_collaborators operations
+	"github_collaborators:list": {
 		Level:                RiskLow,
 		RequiresDryRun:       false,
 		RequiresConfirmation: false,
@@ -171,16 +181,7 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "collaborators",
 		Description:          "List repository collaborators",
 	},
-	"github_list_invitations": {
-		Level:                RiskLow,
-		RequiresDryRun:       false,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "collaborators",
-		Description:          "View pending invitations",
-	},
-	"github_check_collaborator": {
+	"github_collaborators:check": {
 		Level:                RiskLow,
 		RequiresDryRun:       false,
 		RequiresConfirmation: false,
@@ -189,18 +190,7 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "collaborators",
 		Description:          "Check collaboration status",
 	},
-	"github_list_repo_teams": {
-		Level:                RiskLow,
-		RequiresDryRun:       false,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "teams",
-		Description:          "List teams with repo access",
-	},
-
-	// Collaborator Management - Write operations (MEDIUM)
-	"github_add_collaborator": {
+	"github_collaborators:add": {
 		Level:                RiskMedium,
 		RequiresDryRun:       true,
 		RequiresConfirmation: false,
@@ -209,7 +199,7 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "collaborators",
 		Description:          "Invite collaborator with permissions",
 	},
-	"github_update_collaborator_permission": {
+	"github_collaborators:update_permission": {
 		Level:                RiskMedium,
 		RequiresDryRun:       true,
 		RequiresConfirmation: false,
@@ -218,36 +208,7 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "collaborators",
 		Description:          "Change collaborator access level",
 	},
-	"github_accept_invitation": {
-		Level:                RiskMedium,
-		RequiresDryRun:       false,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "collaborators",
-		Description:          "Accept repository invitation",
-	},
-	"github_cancel_invitation": {
-		Level:                RiskMedium,
-		RequiresDryRun:       true,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "collaborators",
-		Description:          "Cancel pending invitation",
-	},
-	"github_add_repo_team": {
-		Level:                RiskMedium,
-		RequiresDryRun:       true,
-		RequiresConfirmation: false,
-		RequiresBackup:       false,
-		RequiresAudit:        true,
-		Category:             "teams",
-		Description:          "Grant team access to repository",
-	},
-
-	// Collaborator Management - Destructive operations (HIGH)
-	"github_remove_collaborator": {
+	"github_collaborators:remove": {
 		Level:                RiskHigh,
 		RequiresDryRun:       true,
 		RequiresConfirmation: true,
@@ -256,18 +217,72 @@ var operationRiskMap = map[string]OperationRisk{
 		Category:             "collaborators",
 		Description:          "Remove collaborator access (loss of access)",
 	},
+	"github_collaborators:list_invitations": {
+		Level:                RiskLow,
+		RequiresDryRun:       false,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "collaborators",
+		Description:          "View pending invitations",
+	},
+	"github_collaborators:accept_invitation": {
+		Level:                RiskMedium,
+		RequiresDryRun:       false,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "collaborators",
+		Description:          "Accept repository invitation",
+	},
+	"github_collaborators:cancel_invitation": {
+		Level:                RiskMedium,
+		RequiresDryRun:       true,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "collaborators",
+		Description:          "Cancel pending invitation",
+	},
+	"github_collaborators:list_teams": {
+		Level:                RiskLow,
+		RequiresDryRun:       false,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "teams",
+		Description:          "List teams with repo access",
+	},
+	"github_collaborators:add_team": {
+		Level:                RiskMedium,
+		RequiresDryRun:       true,
+		RequiresConfirmation: false,
+		RequiresBackup:       false,
+		RequiresAudit:        true,
+		Category:             "teams",
+		Description:          "Grant team access to repository",
+	},
 }
 
-// ClassifyOperation returns the risk profile for a given operation
+// ClassifyOperation returns the risk profile for a given operation.
+// Accepts both composite keys "tool:operation" and legacy tool names.
 func ClassifyOperation(operation string) (OperationRisk, bool) {
 	risk, exists := operationRiskMap[operation]
 	return risk, exists
 }
 
-// IsAdminOperation checks if an operation is an administrative operation
+// IsAdminOperation checks if an operation is administrative.
+// Accepts both consolidated tool names ("github_admin_repo") and
+// composite keys ("github_admin_repo:get_settings").
 func IsAdminOperation(operation string) bool {
-	_, exists := operationRiskMap[operation]
-	return exists
+	if adminToolNames[operation] {
+		return true
+	}
+	// Check composite key "tool:operation" format
+	if idx := strings.Index(operation, ":"); idx > 0 {
+		return adminToolNames[operation[:idx]]
+	}
+	return false
 }
 
 // GetOperationsByRiskLevel returns all operations at a specific risk level

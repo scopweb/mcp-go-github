@@ -6,33 +6,66 @@ import "github.com/jotajotape/github-go-server-mcp/pkg/types"
 func ListGitAdvancedTools() []types.Tool {
 	return []types.Tool{
 		{
-			Name:        "git_log_analysis",
-			Description: "Análisis completo del historial de commits",
+			Name:        "git_history",
+			Description: "Consolidated Git history tool. Operations: log (commit history with analysis), diff (modified files with statistics). Use 'log' to view commit history and 'diff' to see file changes.",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"limit": {Type: "string", Description: "Número de commits a mostrar (default: 20)"},
+					"operation": {Type: "string", Description: "Operation to perform: log, diff"},
+					"limit":     {Type: "string", Description: "Number of commits to show (for log, default: 20)"},
+					"staged":    {Type: "boolean", Description: "Show staged files (for diff, default: false)"},
 				},
+				Required: []string{"operation"},
 			},
 		},
 		{
-			Name:        "git_diff_files",
-			Description: "Muestra archivos modificados con estadísticas",
+			Name:        "git_branch",
+			Description: "Consolidated Git branch management tool. Operations: checkout (switch or create branch), checkout_remote (checkout remote branch with local tracking), list (list all branches), merge (merge branches with safety validations), rebase (rebase onto specified branch), backup (create backup tag of current state).",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"staged": {Type: "boolean", Description: "Mostrar archivos en staging (default: false)"},
+					"operation":     {Type: "string", Description: "Operation to perform: checkout, checkout_remote, list, merge, rebase, backup"},
+					"branch":        {Type: "string", Description: "Branch name (for checkout, rebase)"},
+					"create":        {Type: "boolean", Description: "Create new branch (for checkout)"},
+					"remote_branch": {Type: "string", Description: "Remote branch name (for checkout_remote)"},
+					"local_branch":  {Type: "string", Description: "Local branch name (for checkout_remote, optional)"},
+					"source_branch": {Type: "string", Description: "Source branch for merge (for merge)"},
+					"target_branch": {Type: "string", Description: "Target branch for merge (for merge, optional - uses current)"},
+					"remote":        {Type: "boolean", Description: "Include remote branches (for list, default: false)"},
+					"name":          {Type: "string", Description: "Backup name (for backup)"},
 				},
+				Required: []string{"operation"},
 			},
 		},
 		{
-			Name:        "git_branch_list",
-			Description: "Lista todas las ramas con información detallada",
+			Name:        "git_sync",
+			Description: "Consolidated Git sync and push/pull tool. Operations: push (push to remote), pull (pull from remote), force_push (force push with --force-with-lease and automatic backup), push_upstream (push setting upstream tracking), sync (fetch + intelligent merge with remote), pull_strategy (pull with specific strategy: merge, rebase, ff-only).",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
-					"remote": {Type: "boolean", Description: "Incluir ramas remotas (default: false)"},
+					"operation":     {Type: "string", Description: "Operation to perform: push, pull, force_push, push_upstream, sync, pull_strategy"},
+					"branch":        {Type: "string", Description: "Branch name (optional, uses current branch)"},
+					"force":         {Type: "boolean", Description: "Use --force-with-lease (for force_push)"},
+					"remote_branch": {Type: "string", Description: "Remote branch name (for sync, optional)"},
+					"strategy":      {Type: "string", Description: "Pull strategy: merge, rebase, ff-only (for pull_strategy)"},
 				},
+				Required: []string{"operation"},
+			},
+		},
+		{
+			Name:        "git_conflict",
+			Description: "Consolidated Git conflict management tool. Operations: status (detailed conflict state in merge/rebase), resolve (automatic conflict resolution with strategies: theirs, ours, abort, manual), detect (detect potential conflicts between branches before merging), safe_merge (merge with automatic backup and conflict detection).",
+			InputSchema: types.ToolInputSchema{
+				Type: "object",
+				Properties: map[string]types.Property{
+					"operation":     {Type: "string", Description: "Operation to perform: status, resolve, detect, safe_merge"},
+					"strategy":      {Type: "string", Description: "Resolution strategy: theirs, ours, abort, manual (for resolve)"},
+					"source_branch": {Type: "string", Description: "Source branch (for detect)"},
+					"target_branch": {Type: "string", Description: "Target branch (for detect)"},
+					"source":        {Type: "string", Description: "Source branch (for safe_merge)"},
+					"target":        {Type: "string", Description: "Target branch (for safe_merge, optional - uses current)"},
+				},
+				Required: []string{"operation"},
 			},
 		},
 		{
@@ -86,157 +119,8 @@ func ListGitAdvancedTools() []types.Tool {
 			},
 		},
 		{
-			Name:        "git_context",
-			Description: "🔧 Auto-detecta contexto Git para optimizar tokens (Git local vs GitHub API)",
-			InputSchema: types.ToolInputSchema{
-				Type:       "object",
-				Properties: map[string]types.Property{},
-			},
-		},
-		{
-			Name:        "git_checkout_remote",
-			Description: "🚀 Hace checkout de una rama remota creando tracking local",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"remote_branch": {Type: "string", Description: "Nombre de la rama remota (ej: main, develop)"},
-					"local_branch":  {Type: "string", Description: "Nombre local (opcional, usa el mismo de la remota)"},
-				},
-				Required: []string{"remote_branch"},
-			},
-		},
-		{
-			Name:        "git_merge",
-			Description: "🔀 Merge de ramas con validaciones de seguridad",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"source_branch": {Type: "string", Description: "Rama origen del merge"},
-					"target_branch": {Type: "string", Description: "Rama destino (opcional, usa actual)"},
-				},
-				Required: []string{"source_branch"},
-			},
-		},
-		{
-			Name:        "git_rebase",
-			Description: "⚡ Rebase con rama especificada",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"branch": {Type: "string", Description: "Rama base para el rebase"},
-				},
-				Required: []string{"branch"},
-			},
-		},
-		{
-			Name:        "git_pull_with_strategy",
-			Description: "⬇️ Pull avanzado con estrategias específicas",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"branch":   {Type: "string", Description: "Rama a actualizar (opcional, usa actual)"},
-					"strategy": {Type: "string", Description: "Estrategia: merge, rebase, ff-only"},
-				},
-				Required: []string{"strategy"},
-			},
-		},
-		{
-			Name:        "git_force_push",
-			Description: "⬆️ Push con opción force (con backup automático)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"branch": {Type: "string", Description: "Rama a subir (opcional, usa actual)"},
-					"force":  {Type: "boolean", Description: "Usar --force-with-lease"},
-				},
-				Required: []string{"force"},
-			},
-		},
-		{
-			Name:        "git_push_upstream",
-			Description: "⬆️ Push configurando upstream tracking",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"branch": {Type: "string", Description: "Rama a subir (opcional, usa actual)"},
-				},
-			},
-		},
-		{
-			Name:        "git_sync_with_remote",
-			Description: "🔄 Sincronización automática con rama remota (fetch + merge inteligente)",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"remote_branch": {Type: "string", Description: "Rama remota (opcional, usa actual)"},
-				},
-			},
-		},
-		{
-			Name:        "git_safe_merge",
-			Description: "🛡️ Merge seguro con backup automático y detección de conflicts",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"source": {Type: "string", Description: "Rama origen"},
-					"target": {Type: "string", Description: "Rama destino (opcional, usa actual)"},
-				},
-				Required: []string{"source"},
-			},
-		},
-		{
-			Name:        "git_conflict_status",
-			Description: "⚠️ Estado detallado de conflicts en merge/rebase",
-			InputSchema: types.ToolInputSchema{
-				Type:       "object",
-				Properties: map[string]types.Property{},
-			},
-		},
-		{
-			Name:        "git_resolve_conflicts",
-			Description: "🔧 Resolución automática de conflicts con estrategias",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"strategy": {Type: "string", Description: "Estrategia: theirs, ours, abort, manual"},
-				},
-				Required: []string{"strategy"},
-			},
-		},
-		{
-			Name:        "git_validate_clean_state",
-			Description: "✅ Valida que el working directory esté limpio",
-			InputSchema: types.ToolInputSchema{
-				Type:       "object",
-				Properties: map[string]types.Property{},
-			},
-		},
-		{
-			Name:        "git_detect_conflicts",
-			Description: "🔍 Detecta conflicts potenciales entre ramas",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"source_branch": {Type: "string", Description: "Rama origen"},
-					"target_branch": {Type: "string", Description: "Rama destino"},
-				},
-				Required: []string{"source_branch", "target_branch"},
-			},
-		},
-		{
-			Name:        "git_create_backup",
-			Description: "💾 Crea backup/tag del estado actual",
-			InputSchema: types.ToolInputSchema{
-				Type: "object",
-				Properties: map[string]types.Property{
-					"name": {Type: "string", Description: "Nombre del backup"},
-				},
-				Required: []string{"name"},
-			},
-		},
-		{
 			Name:        "git_reset",
-			Description: "↶ Deshace commits moviendo HEAD a un commit específico (soft/mixed/hard)",
+			Description: "Undo commits by moving HEAD to a specific commit (soft/mixed/hard). Dangerous operation - use with caution.",
 			InputSchema: types.ToolInputSchema{
 				Type: "object",
 				Properties: map[string]types.Property{
