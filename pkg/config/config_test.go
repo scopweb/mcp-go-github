@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jotajotape/github-go-server-mcp/pkg/safety"
+	"github.com/scopweb/mcp-go-github/pkg/safety"
 )
 
 func TestLoadConfig_NoFile(t *testing.T) {

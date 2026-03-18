@@ -1,10 +1,8 @@
 @echo off
 echo ============================================
-echo   GitHub MCP Server v3.0 - Build for Mac
+echo   GitHub MCP Server v4.0 - Build for Mac
 echo ============================================
 echo.
-
-cd /d "C:\MCPs\clone\mcp-go-github"
 
 REM Verify Go
 go version >nul 2>&1
@@ -21,24 +19,24 @@ echo [2/4] Building for macOS ARM64 (Apple Silicon)...
 set GOOS=darwin
 set GOARCH=arm64
 set CGO_ENABLED=0
-go build -ldflags="-s -w" -o dist/mac-arm64/github-mcp-server-v3 ./cmd/github-mcp-server/main.go
+go build -ldflags="-s -w" -o dist/mac-arm64/github-mcp-server-v4 ./cmd/github-mcp-server/main.go
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to build for ARM64
     exit /b 1
 )
-echo       OK: dist/mac-arm64/github-mcp-server-v3
+echo       OK: dist/mac-arm64/github-mcp-server-v4
 
 REM Build for Intel Mac
 echo [3/4] Building for macOS AMD64 (Intel)...
 set GOOS=darwin
 set GOARCH=amd64
 set CGO_ENABLED=0
-go build -ldflags="-s -w" -o dist/mac-amd64/github-mcp-server-v3 ./cmd/github-mcp-server/main.go
+go build -ldflags="-s -w" -o dist/mac-amd64/github-mcp-server-v4 ./cmd/github-mcp-server/main.go
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to build for AMD64
     exit /b 1
 )
-echo       OK: dist/mac-amd64/github-mcp-server-v3
+echo       OK: dist/mac-amd64/github-mcp-server-v4
 
 REM Copy installer and config to dist folders
 echo [4/4] Packaging installer files...
@@ -57,10 +55,10 @@ echo   Build complete!
 echo ============================================
 echo.
 echo   Apple Silicon (M1/M2/M3/M4):
-echo     dist\mac-arm64\github-mcp-server-v3
+echo     dist\mac-arm64\github-mcp-server-v4
 echo.
 echo   Intel Mac:
-echo     dist\mac-amd64\github-mcp-server-v3
+echo     dist\mac-amd64\github-mcp-server-v4
 echo.
 echo   To install on Mac:
 echo     1. Copy the correct folder to the Mac

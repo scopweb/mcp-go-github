@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListHybridTools retorna las herramientas híbridas (Git local primero, GitHub API fallback)
 func ListHybridTools() []types.Tool {

@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListGitInfoTools returns consolidated Git information tools
 func ListGitInfoTools() []types.Tool {

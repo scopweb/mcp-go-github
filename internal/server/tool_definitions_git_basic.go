@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListGitBasicTools returns the core Git workflow tools (kept individual for fast access)
 func ListGitBasicTools() []types.Tool {

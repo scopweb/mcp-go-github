@@ -47,9 +47,11 @@ coverage.out
 CONVERSATION.md
 *.prompt.md
 ejemplos_github_repositorios/
+docs/
 
 # Test artifacts
 test_mcp.go
+pkg/safety/.test-backups/
 
 # Claude Code local configuration
 .claude/

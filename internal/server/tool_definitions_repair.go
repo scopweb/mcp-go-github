@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListRepairTools returns the consolidated GitHub repair tool for closing, merging, rerunning, and dismissing
 func ListRepairTools() []types.Tool {

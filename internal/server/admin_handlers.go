@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-github/v81/github"
-	"github.com/jotajotape/github-go-server-mcp/pkg/types"
+	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
 // HandleAdminTool routes consolidated admin tool calls through safety middleware.

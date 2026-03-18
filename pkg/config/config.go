@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jotajotape/github-go-server-mcp/pkg/safety"
+	"github.com/scopweb/mcp-go-github/pkg/safety"
 )
 
 // Config represents the complete MCP server configuration

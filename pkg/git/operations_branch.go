@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jotajotape/github-go-server-mcp/pkg/types"
+	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
 func (c *Client) Checkout(branch string, create bool) (string, error) {

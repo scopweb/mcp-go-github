@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/jotajotape/github-go-server-mcp/pkg/config"
-	"github.com/jotajotape/github-go-server-mcp/pkg/safety"
-	"github.com/jotajotape/github-go-server-mcp/pkg/types"
+	"github.com/scopweb/mcp-go-github/pkg/config"
+	"github.com/scopweb/mcp-go-github/pkg/safety"
+	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
 // SafetyMiddleware wraps tool execution with safety checks

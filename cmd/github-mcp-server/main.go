@@ -14,11 +14,11 @@ import (
 	ghclient "github.com/google/go-github/v81/github"
 	"golang.org/x/oauth2"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/server"
-	"github.com/jotajotape/github-go-server-mcp/pkg/admin"
-	"github.com/jotajotape/github-go-server-mcp/pkg/git"
-	"github.com/jotajotape/github-go-server-mcp/pkg/github"
-	"github.com/jotajotape/github-go-server-mcp/pkg/types"
+	"github.com/scopweb/mcp-go-github/internal/server"
+	"github.com/scopweb/mcp-go-github/pkg/admin"
+	"github.com/scopweb/mcp-go-github/pkg/git"
+	"github.com/scopweb/mcp-go-github/pkg/github"
+	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
 func main() {

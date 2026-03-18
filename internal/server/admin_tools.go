@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListAdminTools returns the list of administrative tools (v3.0)
 // Consolidated into 4 tools using the operation parameter pattern.

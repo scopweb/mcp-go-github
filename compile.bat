@@ -4,8 +4,6 @@ echo   GitHub MCP Server v4.0 - Build (Windows)
 echo ============================================
 echo.
 
-cd /d "C:\MCPs\clone\mcp-go-github"
-
 REM Verify Go
 go version >nul 2>&1
 if %errorlevel% neq 0 (

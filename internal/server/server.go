@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jotajotape/github-go-server-mcp/internal/hybrid"
-	"github.com/jotajotape/github-go-server-mcp/pkg/dashboard"
-	"github.com/jotajotape/github-go-server-mcp/pkg/interfaces"
-	"github.com/jotajotape/github-go-server-mcp/pkg/types"
+	"github.com/scopweb/mcp-go-github/internal/hybrid"
+	"github.com/scopweb/mcp-go-github/pkg/dashboard"
+	"github.com/scopweb/mcp-go-github/pkg/interfaces"
+	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
 // MCPServer representa el servidor MCP principal

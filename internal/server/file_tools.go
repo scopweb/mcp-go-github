@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListFileTools returns tools for GitHub file operations (no Git required)
 // Consolidated into 1 tool using the operation parameter pattern.

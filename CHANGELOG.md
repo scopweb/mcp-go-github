@@ -1,5 +1,14 @@
 # Changelog
 
+All notable changes to GitHub MCP Server are documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+<!-- 🇪🇸 Español: El contenido detallado está redactado en español a continuación. -->
+
+---
+
 Todos los cambios importantes del proyecto GitHub MCP Server serán documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListResponseTools returns the consolidated GitHub response tool
 func ListResponseTools() []types.Tool {

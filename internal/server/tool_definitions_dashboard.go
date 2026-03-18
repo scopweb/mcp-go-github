@@ -1,6 +1,6 @@
 package server
 
-import "github.com/jotajotape/github-go-server-mcp/pkg/types"
+import "github.com/scopweb/mcp-go-github/pkg/types"
 
 // ListDashboardTools returns the consolidated GitHub dashboard tool
 func ListDashboardTools() []types.Tool {

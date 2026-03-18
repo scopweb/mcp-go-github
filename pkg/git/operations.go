@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jotajotape/github-go-server-mcp/pkg/interfaces"
-	"github.com/jotajotape/github-go-server-mcp/pkg/types"
+	"github.com/scopweb/mcp-go-github/pkg/interfaces"
+	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
 // executor define la interfaz para ejecutar commands.

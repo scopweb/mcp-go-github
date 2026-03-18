@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/go-github/v81/github"
-	"github.com/jotajotape/github-go-server-mcp/pkg/types"
+	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
 // GitOperations define la interfaz para las operaciones de Git.
