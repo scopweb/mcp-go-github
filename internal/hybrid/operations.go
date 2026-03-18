@@ -395,20 +395,18 @@ func PushFiles(gitOps interfaces.GitOperations, args map[string]interface{}) (st
 		totalProcessed++
 	}
 
-	// Git add: use specific paths if only paths mode, otherwise -A
+	// Git add: stage only the specific files processed, never use -A to avoid
+	// accidentally staging sensitive untracked files (e.g. .env, .mcp.json)
+	var toStage []string
+	toStage = append(toStage, created...)
+	toStage = append(toStage, updated...)
+	toStage = append(toStage, staged...)
+
 	var addResult string
 	var err error
-	if len(rawFiles) == 0 && len(staged) > 0 {
-		// Only paths mode: stage specific files
-		addResult, err = gitOps.Add(strings.Join(staged, " "))
-		if err != nil {
-			return "", fmt.Errorf("git add falló: %w", err)
-		}
-	} else {
-		addResult, err = gitOps.Add("-A")
-		if err != nil {
-			return "", fmt.Errorf("git add falló: %w", err)
-		}
+	addResult, err = gitOps.Add(strings.Join(toStage, " "))
+	if err != nil {
+		return "", fmt.Errorf("git add falló: %w", err)
 	}
 
 	commitResult, err := gitOps.Commit(commitMessage)

@@ -111,20 +111,20 @@ func handleGetRepoSettings(s *MCPServer, ctx context.Context, args map[string]in
 	}
 
 	text := fmt.Sprintf("📋 Repository Settings: %s/%s\n\n", owner, repo)
-	text += fmt.Sprintf("Name: %s\n", *repository.Name)
+	text += fmt.Sprintf("Name: %s\n", repository.GetName())
 	if repository.Description != nil {
-		text += fmt.Sprintf("Description: %s\n", *repository.Description)
+		text += fmt.Sprintf("Description: %s\n", repository.GetDescription())
 	}
-	text += fmt.Sprintf("Private: %v\n", *repository.Private)
-	text += fmt.Sprintf("Default Branch: %s\n", *repository.DefaultBranch)
-	text += fmt.Sprintf("Has Issues: %v\n", *repository.HasIssues)
-	text += fmt.Sprintf("Has Wiki: %v\n", *repository.HasWiki)
-	text += fmt.Sprintf("Has Projects: %v\n", *repository.HasProjects)
-	text += fmt.Sprintf("Allow Squash Merge: %v\n", *repository.AllowSquashMerge)
-	text += fmt.Sprintf("Allow Merge Commit: %v\n", *repository.AllowMergeCommit)
-	text += fmt.Sprintf("Allow Rebase Merge: %v\n", *repository.AllowRebaseMerge)
+	text += fmt.Sprintf("Private: %v\n", repository.GetPrivate())
+	text += fmt.Sprintf("Default Branch: %s\n", repository.GetDefaultBranch())
+	text += fmt.Sprintf("Has Issues: %v\n", repository.GetHasIssues())
+	text += fmt.Sprintf("Has Wiki: %v\n", repository.GetHasWiki())
+	text += fmt.Sprintf("Has Projects: %v\n", repository.GetHasProjects())
+	text += fmt.Sprintf("Allow Squash Merge: %v\n", repository.GetAllowSquashMerge())
+	text += fmt.Sprintf("Allow Merge Commit: %v\n", repository.GetAllowMergeCommit())
+	text += fmt.Sprintf("Allow Rebase Merge: %v\n", repository.GetAllowRebaseMerge())
 	if repository.DeleteBranchOnMerge != nil {
-		text += fmt.Sprintf("Delete Branch on Merge: %v\n", *repository.DeleteBranchOnMerge)
+		text += fmt.Sprintf("Delete Branch on Merge: %v\n", repository.GetDeleteBranchOnMerge())
 	}
 
 	return types.ToolCallResult{

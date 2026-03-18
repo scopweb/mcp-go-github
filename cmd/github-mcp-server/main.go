@@ -117,8 +117,28 @@ func main() {
 			continue
 		}
 
-		// Procesar solicitud
-		response := server.HandleRequest(mcpServer, req)
+		// Procesar solicitud con recovery para evitar crash por panics
+		var response types.JSONRPCResponse
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Panic recovered processing request: %v", r)
+					id := req.ID
+					if id == nil {
+						id = 0
+					}
+					response = types.JSONRPCResponse{
+						JSONRPC: "2.0",
+						ID:      id,
+						Error: &types.JSONRPCError{
+							Code:    -32603,
+							Message: fmt.Sprintf("Internal error: %v", r),
+						},
+					}
+				}
+			}()
+			response = server.HandleRequest(mcpServer, req)
+		}()
 
 		// Enviar respuesta JSON-RPC
 		respBytes, err := json.Marshal(response)
