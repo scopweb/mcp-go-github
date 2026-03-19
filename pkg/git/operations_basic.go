@@ -53,8 +53,19 @@ func (c *Client) Status() (string, error) {
 }
 
 // Add añade archivos al staging area.
+// Soporta múltiples archivos separados por espacios o comas.
 func (c *Client) Add(files string) (string, error) {
-	cmd := c.executor.Command("git", "add", files)
+	// Split files by spaces and/or commas, filtering empty entries
+	parts := strings.FieldsFunc(files, func(r rune) bool {
+		return r == ' ' || r == ','
+	})
+	if len(parts) == 0 {
+		return "", errors.New("no files specified for git add")
+	}
+
+	// Build args: ["add", file1, file2, ...]
+	args := append([]string{"add"}, parts...)
+	cmd := c.executor.Command("git", args...)
 	cmd.SetDir(c.Config.RepoPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
