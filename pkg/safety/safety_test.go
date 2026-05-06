@@ -2,6 +2,7 @@ package safety
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -553,10 +554,15 @@ func TestEngine_GetConfig(t *testing.T) {
 }
 
 func TestEngine_CreateBackup(t *testing.T) {
+	backupDir := "./.test-backups"
+	t.Cleanup(func() {
+		_ = os.RemoveAll(backupDir)
+	})
+
 	config := &SafetyConfig{
 		Mode:             SafetyModeModerate,
 		EnableAutoBackup: true,
-		BackupPath:       "./.test-backups",
+		BackupPath:       backupDir,
 	}
 	engine := NewEngine(config)
 
@@ -616,6 +622,24 @@ func TestFormatRollbackCommand(t *testing.T) {
 			operation:  "github_unknown:op",
 			params:     map[string]interface{}{},
 			wantSubstr: "No automatic rollback",
+		},
+		{
+			name:      "Stateful rollback points to backup file",
+			operation: "github_admin_repo:update_settings",
+			params: map[string]interface{}{
+				"owner": "test",
+				"repo":  "demo",
+			},
+			wantSubstr: ".mcp-backups/",
+		},
+		{
+			name:      "Delete repo points to backup file",
+			operation: "github_admin_repo:delete",
+			params: map[string]interface{}{
+				"owner": "test",
+				"repo":  "demo",
+			},
+			wantSubstr: "manual restore",
 		},
 	}
 

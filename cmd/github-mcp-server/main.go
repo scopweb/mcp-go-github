@@ -73,8 +73,20 @@ func main() {
 	adminClient := admin.NewClient(&githubClient)
 
 	// Inicializar safety middleware (v3.0)
+	// If --profile=foo is passed, prefer ./safety.foo.json, falling back to ./safety.json
+	safetyConfigPath := "./safety.json"
+	if *profile != "" {
+		profilePath := fmt.Sprintf("./safety.%s.json", *profile)
+		if _, statErr := os.Stat(profilePath); statErr == nil {
+			safetyConfigPath = profilePath
+			log.Printf("Using profile-specific safety config: %s", profilePath)
+		} else {
+			log.Printf("Profile config %s not found, falling back to %s", profilePath, safetyConfigPath)
+		}
+	}
+
 	var safetyMiddleware *server.SafetyMiddleware
-	safetyMiddleware, err = server.NewSafetyMiddleware("./safety.json")
+	safetyMiddleware, err = server.NewSafetyMiddleware(safetyConfigPath)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize safety middleware (using defaults): %v", err)
 		// Create with empty config path to use defaults
@@ -97,6 +109,8 @@ func main() {
 
 	// Leer solicitudes JSON-RPC del stdin
 	scanner := bufio.NewScanner(os.Stdin)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 10*1024*1024) // 10MB max to handle large file payloads
 	for scanner.Scan() {
 		line := scanner.Bytes()
 
@@ -106,7 +120,6 @@ func main() {
 			// Enviar error de JSON inválido
 			errResp := types.JSONRPCResponse{
 				JSONRPC: "2.0",
-				ID:      nil,
 				Error: &types.JSONRPCError{
 					Code:    -32700,
 					Message: "Parse error",
@@ -114,6 +127,12 @@ func main() {
 			}
 			respBytes, _ := json.Marshal(errResp)
 			fmt.Println(string(respBytes))
+			continue
+		}
+
+		// Notifications (no id field) must not receive a response per MCP spec
+		if req.ID == nil && strings.HasPrefix(req.Method, "notifications/") {
+			server.HandleRequest(mcpServer, req) // process for side effects
 			continue
 		}
 

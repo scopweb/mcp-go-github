@@ -412,17 +412,9 @@ func handleUpdateWebhook(s *MCPServer, ctx context.Context, args map[string]inte
 	owner, _ := args["owner"].(string)
 	repo, _ := args["repo"].(string)
 
-	// Extract hook_id (may come as float64 from JSON)
-	var hookID int64
-	switch v := args["hook_id"].(type) {
-	case float64:
-		hookID = int64(v)
-	case int64:
-		hookID = v
-	case int:
-		hookID = int64(v)
-	default:
-		return types.ToolCallResult{}, fmt.Errorf("invalid hook_id type")
+	hookID, idErr := getInt64Arg(args, "hook_id")
+	if idErr != nil {
+		return types.ToolCallResult{}, idErr
 	}
 
 	// MEDIUM risk - use safety middleware
@@ -461,17 +453,9 @@ func handleDeleteWebhook(s *MCPServer, ctx context.Context, args map[string]inte
 	owner, _ := args["owner"].(string)
 	repo, _ := args["repo"].(string)
 
-	// Extract hook_id (may come as float64 from JSON)
-	var hookID int64
-	switch v := args["hook_id"].(type) {
-	case float64:
-		hookID = int64(v)
-	case int64:
-		hookID = v
-	case int:
-		hookID = int64(v)
-	default:
-		return types.ToolCallResult{}, fmt.Errorf("invalid hook_id type")
+	hookID, idErr := getInt64Arg(args, "hook_id")
+	if idErr != nil {
+		return types.ToolCallResult{}, idErr
 	}
 
 	// HIGH risk - requires confirmation
@@ -489,17 +473,9 @@ func handleTestWebhook(s *MCPServer, ctx context.Context, args map[string]interf
 	owner, _ := args["owner"].(string)
 	repo, _ := args["repo"].(string)
 
-	// Extract hook_id (may come as float64 from JSON)
-	var hookID int64
-	switch v := args["hook_id"].(type) {
-	case float64:
-		hookID = int64(v)
-	case int64:
-		hookID = v
-	case int:
-		hookID = int64(v)
-	default:
-		return types.ToolCallResult{}, fmt.Errorf("invalid hook_id type")
+	hookID, idErr := getInt64Arg(args, "hook_id")
+	if idErr != nil {
+		return types.ToolCallResult{}, idErr
 	}
 
 	// LOW risk - execute directly
@@ -646,17 +622,9 @@ func handleListInvitations(s *MCPServer, ctx context.Context, args map[string]in
 }
 
 func handleAcceptInvitation(s *MCPServer, ctx context.Context, args map[string]interface{}) (types.ToolCallResult, error) {
-	// Extract invitation_id (may come as float64 from JSON)
-	var invitationID int64
-	switch v := args["invitation_id"].(type) {
-	case float64:
-		invitationID = int64(v)
-	case int64:
-		invitationID = v
-	case int:
-		invitationID = int64(v)
-	default:
-		return types.ToolCallResult{}, fmt.Errorf("invalid invitation_id type")
+	invitationID, idErr := getInt64Arg(args, "invitation_id")
+	if idErr != nil {
+		return types.ToolCallResult{}, idErr
 	}
 
 	// MEDIUM risk - use safety middleware
@@ -674,17 +642,9 @@ func handleCancelInvitation(s *MCPServer, ctx context.Context, args map[string]i
 	owner, _ := args["owner"].(string)
 	repo, _ := args["repo"].(string)
 
-	// Extract invitation_id (may come as float64 from JSON)
-	var invitationID int64
-	switch v := args["invitation_id"].(type) {
-	case float64:
-		invitationID = int64(v)
-	case int64:
-		invitationID = v
-	case int:
-		invitationID = int64(v)
-	default:
-		return types.ToolCallResult{}, fmt.Errorf("invalid invitation_id type")
+	invitationID, idErr := getInt64Arg(args, "invitation_id")
+	if idErr != nil {
+		return types.ToolCallResult{}, idErr
 	}
 
 	// MEDIUM risk - use safety middleware
@@ -730,17 +690,9 @@ func handleAddRepoTeam(s *MCPServer, ctx context.Context, args map[string]interf
 	repo, _ := args["repo"].(string)
 	permission, _ := args["permission"].(string)
 
-	// Extract team_id (may come as float64 from JSON)
-	var teamID int64
-	switch v := args["team_id"].(type) {
-	case float64:
-		teamID = int64(v)
-	case int64:
-		teamID = v
-	case int:
-		teamID = int64(v)
-	default:
-		return types.ToolCallResult{}, fmt.Errorf("invalid team_id type")
+	teamID, idErr := getInt64Arg(args, "team_id")
+	if idErr != nil {
+		return types.ToolCallResult{}, idErr
 	}
 
 	// Default to push if not specified

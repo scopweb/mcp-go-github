@@ -396,7 +396,7 @@ func TestParametersMatch(t *testing.T) {
 			requestParams: map[string]interface{}{
 				"owner": "test",
 			},
-			want: true, // Missing in request is OK (validation will catch it)
+			want: false, // Hardened: token bound to "repo" must have matching "repo" in request
 		},
 	}
 

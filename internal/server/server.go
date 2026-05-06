@@ -13,6 +13,13 @@ import (
 	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 
+// Version is the server version, settable at build time via:
+//
+//	go build -ldflags "-X github.com/scopweb/mcp-go-github/internal/server.Version=4.1.0"
+//
+// Defaults to "dev" when not injected so local builds are obviously identifiable.
+var Version = "dev"
+
 // MCPServer representa el servidor MCP principal
 type MCPServer struct {
 	GithubClient    interfaces.GitHubOperations
@@ -63,15 +70,21 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 			"protocolVersion": clientProtocolVersion,
 			"capabilities": map[string]interface{}{
 				"tools": map[string]interface{}{
-					"listChanged": true,
+					"listChanged": false,
 				},
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "github-mcp-server-v4",
-				"version": "4.1.0",
+				"version": Version,
 			},
 		}
-	case "initialized":
+	case "notifications/initialized":
+		// Notification — no response needed (handled in main.go)
+		response.Result = map[string]interface{}{}
+	case "notifications/cancelled":
+		// Notification — silently acknowledge cancellation
+		response.Result = map[string]interface{}{}
+	case "ping":
 		response.Result = map[string]interface{}{}
 	case "tools/list":
 		response.Result = ListTools(s.GitAvailable, s.Toolsets)
@@ -398,12 +411,13 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 
 	// =================================================================
 	// Hybrid tools (Git-first, API fallback)
+	// gh_ prefix avoids collision with generic filesystem MCP tools.
 	// =================================================================
-	case "create_file":
+	case "gh_create_file":
 		text, err = hybrid.SmartCreateFile(s.GitClient, s.GithubClient, arguments)
-	case "update_file":
+	case "gh_update_file":
 		text, err = hybrid.SmartUpdateFile(s.GitClient, s.GithubClient, arguments)
-	case "push_files":
+	case "gh_push_files":
 		text, err = hybrid.PushFiles(s.GitClient, arguments)
 
 	// =================================================================
@@ -625,7 +639,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		case "comment_issue":
 			owner, _ := arguments["owner"].(string)
 			repo, _ := arguments["repo"].(string)
-			number := int(arguments["number"].(float64))
+			number, numErr := getIntArg(arguments, "number")
+			if numErr != nil {
+				return types.ToolCallResult{}, numErr
+			}
 			body, _ := arguments["body"].(string)
 			comment, commentErr := s.GithubClient.CreateIssueComment(ctx, owner, repo, number, body)
 			if commentErr != nil {
@@ -636,7 +653,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		case "comment_pr":
 			owner, _ := arguments["owner"].(string)
 			repo, _ := arguments["repo"].(string)
-			number := int(arguments["number"].(float64))
+			number, numErr := getIntArg(arguments, "number")
+			if numErr != nil {
+				return types.ToolCallResult{}, numErr
+			}
 			body, _ := arguments["body"].(string)
 			comment, commentErr := s.GithubClient.CreatePRComment(ctx, owner, repo, number, body)
 			if commentErr != nil {
@@ -647,7 +667,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		case "review_pr":
 			owner, _ := arguments["owner"].(string)
 			repo, _ := arguments["repo"].(string)
-			number := int(arguments["number"].(float64))
+			number, numErr := getIntArg(arguments, "number")
+			if numErr != nil {
+				return types.ToolCallResult{}, numErr
+			}
 			event, _ := arguments["event"].(string)
 			body, _ := arguments["body"].(string)
 			review, reviewErr := s.GithubClient.CreatePRReview(ctx, owner, repo, number, event, body)
@@ -678,7 +701,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		case "close_issue":
 			owner, _ := arguments["owner"].(string)
 			repo, _ := arguments["repo"].(string)
-			number := int(arguments["number"].(float64))
+			number, numErr := getIntArg(arguments, "number")
+			if numErr != nil {
+				return types.ToolCallResult{}, numErr
+			}
 			comment, _ := arguments["comment"].(string)
 			issue, closeErr := s.GithubClient.CloseIssue(ctx, owner, repo, number, comment)
 			if closeErr != nil {
@@ -689,7 +715,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		case "merge_pr":
 			owner, _ := arguments["owner"].(string)
 			repo, _ := arguments["repo"].(string)
-			number := int(arguments["number"].(float64))
+			number, numErr := getIntArg(arguments, "number")
+			if numErr != nil {
+				return types.ToolCallResult{}, numErr
+			}
 			commitMessage, _ := arguments["commit_message"].(string)
 			mergeMethod, _ := arguments["merge_method"].(string)
 			if mergeMethod == "" {
@@ -705,7 +734,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 		case "rerun_workflow":
 			owner, _ := arguments["owner"].(string)
 			repo, _ := arguments["repo"].(string)
-			runID := int64(arguments["run_id"].(float64))
+			runID, runErr := getInt64Arg(arguments, "run_id")
+			if runErr != nil {
+				return types.ToolCallResult{}, runErr
+			}
 			failedOnly, _ := arguments["failed_jobs_only"].(bool)
 			if failedOnly {
 				err = s.GithubClient.RerunFailedJobs(ctx, owner, repo, runID)
@@ -720,7 +752,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 			alertType, _ := arguments["alert_type"].(string)
 			switch alertType {
 			case "dependabot":
-				number := int(arguments["number"].(float64))
+				number, numErr := getIntArg(arguments, "number")
+				if numErr != nil {
+					return types.ToolCallResult{}, numErr
+				}
 				reason, _ := arguments["reason"].(string)
 				comment, _ := arguments["comment"].(string)
 				alert, dismissErr := s.GithubClient.DismissDependabotAlert(ctx, owner, repo, number, reason, comment)
@@ -730,7 +765,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 					text = fmt.Sprintf("Dependabot alert #%d dismissed (reason: %s)\n%s", number, reason, alert.GetHTMLURL())
 				}
 			case "code":
-				number := int64(arguments["number"].(float64))
+				number, numErr := getInt64Arg(arguments, "number")
+				if numErr != nil {
+					return types.ToolCallResult{}, numErr
+				}
 				reason, _ := arguments["reason"].(string)
 				comment, _ := arguments["comment"].(string)
 				alert, dismissErr := s.GithubClient.DismissCodeScanningAlert(ctx, owner, repo, number, reason, comment)
@@ -740,7 +778,10 @@ func CallTool(s *MCPServer, params map[string]interface{}) (types.ToolCallResult
 					text = fmt.Sprintf("Code scanning alert #%d dismissed (reason: %s)\n%s", number, reason, alert.GetHTMLURL())
 				}
 			case "secret":
-				number := int64(arguments["number"].(float64))
+				number, numErr := getInt64Arg(arguments, "number")
+				if numErr != nil {
+					return types.ToolCallResult{}, numErr
+				}
 				resolution, _ := arguments["resolution"].(string)
 				alert, dismissErr := s.GithubClient.DismissSecretScanningAlert(ctx, owner, repo, number, resolution)
 				if dismissErr != nil {

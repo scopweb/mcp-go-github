@@ -73,9 +73,9 @@ go test ./pkg/git/ -v           # Test specific package
 - **`git_reset`** — undo commits (soft/mixed/hard)
 
 ### Hybrid (3 tools)
-- **`create_file`** — Git-first, API fallback
-- **`update_file`** — Git-first, API fallback
-- **`push_files`** — write multiple files + git add/commit/push
+- **`gh_create_file`** — Git-first, API fallback
+- **`gh_update_file`** — Git-first, API fallback
+- **`gh_push_files`** — write multiple files + git add/commit/push
 
 ### GitHub API (1 tool)
 - **`github_repo`** — operations: `list_repos`, `create_repo`, `list_prs`, `create_pr`

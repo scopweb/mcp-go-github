@@ -85,7 +85,10 @@ func (m *SafetyMiddleware) WrapExecution(
 
 	// Log operation result
 	rollbackCmd := safety.FormatRollbackCommand(operation, parameters)
-	changes := []string{result} // Simplified - should extract actual changes
+	// Note: structured per-field diff would be ideal here but requires pre/post
+	// snapshots from each handler. For now we log the human-readable result and
+	// leave changes empty rather than misrepresent the result text as a "change".
+	var changes []string
 
 	logErr := m.engine.LogOperationResult(
 		operation,

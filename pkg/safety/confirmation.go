@@ -170,17 +170,27 @@ func sanitizeParameters(params map[string]interface{}) map[string]interface{} {
 	return sanitized
 }
 
-// parametersMatch checks if critical parameters match between token and request
+// parametersMatch checks if critical parameters match between token and request.
+// Hardened: if the token was generated with a critical key, the request MUST also
+// supply it with the same value. Missing-on-request is rejected (prevents replay
+// of a token by stripping params).
 func parametersMatch(tokenParams, requestParams map[string]interface{}) bool {
-	// Critical parameters that must match exactly
-	criticalKeys := []string{"owner", "repo", "username", "hook_id", "branch"}
+	// Critical parameters that must match exactly when present in token
+	criticalKeys := []string{"owner", "repo", "username", "hook_id", "branch", "invitation_id", "team_id", "number", "run_id"}
 
 	for _, key := range criticalKeys {
 		tokenValue, tokenHas := tokenParams[key]
+		if !tokenHas {
+			continue
+		}
 		requestValue, requestHas := requestParams[key]
-
-		// If both have the key, values must match
-		if tokenHas && requestHas && tokenValue != requestValue {
+		if !requestHas {
+			// Token was bound to this key but request omits it: reject.
+			return false
+		}
+		// Compare by canonical string representation to avoid panics on
+		// non-comparable interface{} values (slices, maps).
+		if fmt.Sprintf("%v", tokenValue) != fmt.Sprintf("%v", requestValue) {
 			return false
 		}
 	}

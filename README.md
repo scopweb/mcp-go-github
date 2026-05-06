@@ -156,9 +156,9 @@ Tools use an `operation` parameter to expose multiple operations under one name.
 
 | Tool | Description |
 |------|-------------|
-| `create_file` | Create file — Git-first, GitHub API fallback |
-| `update_file` | Update file — Git-first, GitHub API fallback |
-| `push_files` | Write multiple files + git add/commit/push in one call |
+| `gh_create_file` | Create file — Git-first, GitHub API fallback |
+| `gh_update_file` | Update file — Git-first, GitHub API fallback |
+| `gh_push_files` | Write multiple files + git add/commit/push in one call |
 
 ### GitHub API (1 tool)
 

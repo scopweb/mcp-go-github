@@ -299,29 +299,47 @@ func (e *Engine) CreateBackup(operation string, data interface{}) (string, error
 	return backupPath, nil
 }
 
-// FormatRollbackCommand generates a rollback command for an operation
+// FormatRollbackCommand generates a rollback command for an operation.
+//
+// For operations whose rollback requires the original state (update_settings,
+// delete*), we cannot generate an executable command from the current parameters
+// alone — instead we point to the backup file in .mcp-backups/ that was written
+// by the safety engine before the destructive operation ran.
+//
+// For symmetric operations (add ↔ remove, create ↔ delete with self-contained
+// payload), we emit a runnable composite command.
 func FormatRollbackCommand(operation string, originalParams map[string]interface{}) string {
-	// Generate reverse operation command (composite keys)
-	reverseOps := map[string]string{
-		"github_collaborators:add":        "github_collaborators:remove",
-		"github_webhooks:create":          "github_webhooks:delete",
-		"github_admin_repo:update_settings": "github_admin_repo:update_settings", // Restore from backup
-		"github_webhooks:delete":          "github_webhooks:create",              // Restore from backup
+	// Symmetric operations: rollback can be derived from the same params.
+	symmetricReverse := map[string]string{
+		"github_collaborators:add": "github_collaborators:remove",
+		"github_webhooks:create":   "github_webhooks:delete",
 	}
 
-	reverseOp, exists := reverseOps[operation]
-	if !exists {
-		return "# No automatic rollback available"
+	// Stateful operations: rollback requires restoring from backup.
+	statefulRollback := map[string]bool{
+		"github_admin_repo:update_settings": true,
+		"github_admin_repo:archive":         true, // unarchive needs original state
+		"github_admin_repo:delete":          true, // backup contains config; recreate is manual
+		"github_webhooks:delete":            true, // recreate needs original config
+		"github_webhooks:update":            true,
+		"github_branch_protection:update":   true,
+		"github_branch_protection:delete":   true,
 	}
 
-	cmd := fmt.Sprintf("%s", reverseOp)
-
-	// Add relevant parameters
-	for key, value := range originalParams {
-		if key != "confirmation_token" && key != "dry_run" {
+	if reverseOp, ok := symmetricReverse[operation]; ok {
+		cmd := reverseOp
+		for key, value := range originalParams {
+			if key == "confirmation_token" || key == "dry_run" {
+				continue
+			}
 			cmd += fmt.Sprintf(" --%s=%v", key, value)
 		}
+		return cmd
 	}
 
-	return cmd
+	if statefulRollback[operation] {
+		return fmt.Sprintf("# Rollback requires manual restore from .mcp-backups/%s-*.json", operation)
+	}
+
+	return "# No automatic rollback available"
 }

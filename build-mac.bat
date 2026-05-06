@@ -14,12 +14,19 @@ if %errorlevel% neq 0 (
 echo [1/4] Cleaning dependencies...
 go mod tidy
 
+REM Read version from VERSION file if present, otherwise default to "dev"
+set VERSION=dev
+if exist VERSION (
+    set /p VERSION=<VERSION
+)
+set LDFLAGS=-s -w -X github.com/scopweb/mcp-go-github/internal/server.Version=%VERSION%
+
 REM Build for Apple Silicon (M1/M2/M3/M4)
 echo [2/4] Building for macOS ARM64 (Apple Silicon)...
 set GOOS=darwin
 set GOARCH=arm64
 set CGO_ENABLED=0
-go build -ldflags="-s -w" -o dist/mac-arm64/github-mcp-server-v4 ./cmd/github-mcp-server/main.go
+go build -ldflags="%LDFLAGS%" -o dist/mac-arm64/github-mcp-server-v4 ./cmd/github-mcp-server/main.go
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to build for ARM64
     exit /b 1
@@ -31,7 +38,7 @@ echo [3/4] Building for macOS AMD64 (Intel)...
 set GOOS=darwin
 set GOARCH=amd64
 set CGO_ENABLED=0
-go build -ldflags="-s -w" -o dist/mac-amd64/github-mcp-server-v4 ./cmd/github-mcp-server/main.go
+go build -ldflags="%LDFLAGS%" -o dist/mac-amd64/github-mcp-server-v4 ./cmd/github-mcp-server/main.go
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to build for AMD64
     exit /b 1

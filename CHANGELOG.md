@@ -16,7 +16,52 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### ⚠️ Breaking Changes
+
+#### Hybrid file tools renamed with `gh_` prefix (2026-05-06)
+- **Renamed**: `create_file` → `gh_create_file`, `update_file` → `gh_update_file`, `push_files` → `gh_push_files`
+- **Reason**: Avoid name collision with generic filesystem MCP tools (most filesystem servers also expose `create_file` / `update_file`). When both servers are active in an MCP host, the unprefixed names made it impossible for the model to disambiguate which server it was calling.
+- **Migration**: Update any scripts, system prompts, or external configs that call these tools by name. The semantics are unchanged — only the names differ.
+- **Files Changed**: `internal/server/tool_definitions_hybrid.go`, `internal/server/server.go`
+
 ### ✨ Added
+
+#### Profile-aware safety config (2026-05-06)
+- **Behavior**: `--profile=foo` now prefers `./safety.foo.json` over `./safety.json` if the file exists, with automatic fallback if not found
+- **Benefit**: Run the same binary with different safety policies per environment (e.g. `safety.prod.json` strict, `safety.dev.json` permissive) without rebuilding
+- **Files Changed**: `cmd/github-mcp-server/main.go`
+
+#### Build-time version injection (2026-05-06)
+- **Behavior**: Server version reported in `initialize` response is now read from a `VERSION` file at build time and injected via `-ldflags`. Defaults to `"dev"` for unflagged local builds.
+- **Files Changed**: `internal/server/server.go`, `compile.bat`, `build-mac.bat`, `VERSION` (new)
+
+### 🔧 Fixed
+
+#### Hardened parameter parsing in JSON-RPC handlers (2026-05-06)
+- **Issue**: Direct type assertions like `int(arguments["number"].(float64))` panicked when the parameter was missing or arrived as a different numeric type. The global `recover()` caught the panic but returned an unhelpful "interface conversion" error to the user.
+- **Fix**: Centralized into `getIntArg`, `getInt64Arg`, `getStringArg` helpers in `internal/server/args.go`. Returns clear error messages naming the offending parameter and accepts `float64`, `int`, `int64`, `string`, and `json.Number` numeric forms.
+- **Sites updated**: 9 in `server.go` (github_respond, github_repair), 6 verbose blocks in `admin_handlers.go` collapsed to 3 lines each (~90 lines removed).
+- **Files Changed**: `internal/server/args.go` (new), `internal/server/server.go`, `internal/server/admin_handlers.go`
+
+#### Confirmation token replay protection hardened (2026-05-06)
+- **Issue**: `parametersMatch` permitted a token bound to `repo: foo` to be reused with a request that simply omitted the `repo` parameter — silently bypassing the check.
+- **Fix**: Token-bound critical keys are now mandatory in the request. Comparison uses canonical string form to avoid panics on non-comparable interface values. Critical key list expanded to include `invitation_id`, `team_id`, `number`, `run_id`.
+- **Files Changed**: `pkg/safety/confirmation.go`, `pkg/safety/confirmation_test.go`
+
+#### Honest rollback commands (2026-05-06)
+- **Issue**: `FormatRollbackCommand` printed `github_admin_repo:update_settings` as its own rollback (a no-op), and `github_webhooks:create` as the rollback for `delete` (with no payload). Both produced commands that looked runnable but weren't.
+- **Fix**: Split into symmetric operations (rollback derivable from same params) and stateful operations (rollback requires the backup file). Stateful ops now emit `# Rollback requires manual restore from .mcp-backups/<op>-*.json` instead of a misleading command.
+- **Files Changed**: `pkg/safety/safety.go`, `pkg/safety/safety_test.go`
+
+#### Audit log no longer mislabels result as "changes" (2026-05-06)
+- **Issue**: `WrapExecution` was logging the human-readable result string in the `changes` field, marked with a TODO that had outlived its purpose.
+- **Fix**: `changes` is left empty until structured pre/post diff is implemented. The result text is still captured in the `Result` field as before, so no information is lost.
+- **Files Changed**: `internal/server/safety_middleware.go`
+
+#### Test no longer leaves `.test-backups/` artifacts (2026-05-06)
+- **Issue**: `TestEngine_CreateBackup` created `pkg/safety/.test-backups/` and never cleaned up, leaving stray files in the working tree.
+- **Fix**: Added `t.Cleanup()` to remove the directory after the test runs.
+- **Files Changed**: `pkg/safety/safety_test.go`
 
 #### Toolset Filtering via `--toolsets` flag (2026-03-10)
 - **New flag**: `--toolsets git,github,admin,files` — start the server exposing only the selected tool groups

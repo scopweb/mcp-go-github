@@ -15,7 +15,12 @@ echo [1/3] Cleaning dependencies...
 go mod tidy
 
 echo [2/3] Compiling for Windows...
-go build -ldflags="-s -w" -o github-mcp-server-v4.exe ./cmd/github-mcp-server/main.go
+REM Read version from VERSION file if present, otherwise default to "dev"
+set VERSION=dev
+if exist VERSION (
+    set /p VERSION=<VERSION
+)
+go build -ldflags="-s -w -X github.com/scopweb/mcp-go-github/internal/server.Version=%VERSION%" -o github-mcp-server-v4.exe ./cmd/github-mcp-server/main.go
 if %errorlevel% neq 0 (
     echo [ERROR] Compilation failed
     exit /b 1

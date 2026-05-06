@@ -38,9 +38,9 @@ Always pass `operation` as the FIRST parameter.
 - **git_reset** → `mode`: soft | mixed | hard, `target`: commit ref, `files`: optional
 
 ### Hybrid (Git-first, API fallback)
-- **create_file** → `path`, `content`, `message`
-- **update_file** → `path`, `content`, `message`
-- **push_files** → `files` (array of {path, content}), `message`, `branch`
+- **gh_create_file** → `path`, `content`, `message`
+- **gh_update_file** → `path`, `content`, `message`
+- **gh_push_files** → `files` (array of {path, content}), `message`, `branch`
 
 ### GitHub API
 - **github_repo** → `operation`: list_repos (params: type) | create_repo (params: name, description, private) | list_prs (params: owner, repo, state) | create_pr (params: owner, repo, title, body, head, base)
@@ -87,7 +87,7 @@ github_admin_repo → operation: update_settings, owner, repo, default_branch: "
 git_set_workspace → path
 git_info → operation: status
 git_branch → operation: checkout, branch: "feature-x", create: true
-(make changes with create_file / update_file)
+(make changes with gh_create_file / gh_update_file)
 git_add → files: "."
 git_commit → message: "feat: description"
 git_sync → operation: push_upstream, branch: "feature-x"

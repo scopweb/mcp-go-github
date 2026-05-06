@@ -1,18 +1,14 @@
-# Binaries
+# Binaries (all .exe/dll/so/dylib/test artifacts)
 *.exe
+*.exe~
 *.dll
 *.so
 *.dylib
 *.test
 
-# Build output
-/github-mcp-modular.exe
-/github-mcp.exe
-/mcp-go-github-modular.exe
-/github-mcp-server-v3.exe
-/github-mcp-server-v3
-github-mcp-modular.exe~
+# Build output dir
 dist/
+build/
 
 # Go specific
 # vendor/ - Incluimos vendor para builds reproducibles
@@ -52,6 +48,7 @@ docs/
 # Test artifacts
 test_mcp.go
 pkg/safety/.test-backups/
+.mcp-backups/
 
 # Claude Code local configuration
 .claude/
