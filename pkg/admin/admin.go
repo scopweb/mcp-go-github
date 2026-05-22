@@ -4,7 +4,7 @@ package admin
 import (
 	"context"
 
-	"github.com/google/go-github/v81/github"
+	"github.com/google/go-github/v88/github"
 )
 
 // Client wraps the GitHub client for administrative operations

@@ -61,7 +61,7 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 
 	switch req.Method {
 	case "initialize":
-		clientProtocolVersion := "2024-11-05"
+		clientProtocolVersion := "2025-11-25"
 		if version, ok := req.Params["protocolVersion"].(string); ok && version != "" {
 			clientProtocolVersion = version
 		}
@@ -77,6 +77,39 @@ func HandleRequest(s *MCPServer, req types.JSONRPCRequest) types.JSONRPCResponse
 				"name":    "github-mcp-server-v4",
 				"version": Version,
 			},
+			"instructions": `GitHub MCP Server v4.0 — 26 consolidated tools for Git and GitHub operations.
+
+## Git Tools (local, zero tokens)
+Git info: git_info [operation: status|file_sha|last_commit|file_content|changed_files|validate_repo|list_files|context|validate_clean]
+Workspace: git_set_workspace [path]
+Basic: git_init [path, initial_branch], git_add [files], git_commit [message]
+History: git_history [operation: log|diff]
+Branch: git_branch [operation: checkout|checkout_remote|list|merge|rebase|backup]
+Sync: git_sync [operation: push|pull|force_push|push_upstream|sync|pull_strategy]
+Conflicts: git_conflict [operation: status|resolve|detect|safe_merge]
+Stash: git_stash [operation: list|push|pop|apply|drop|clear]
+Remote: git_remote [operation: list|add|remove|show|fetch]
+Tags: git_tag [operation: list|create|delete|push|show]
+Clean: git_clean [operation: untracked|untracked_dirs|ignored|all, dry_run]
+Reset: git_reset [mode: soft|mixed|hard, target, files]
+
+## Hybrid Tools (Git-first, API fallback)
+gh_create_file [path, content, message], gh_update_file [path, content, message], gh_push_files [files, message]
+
+## GitHub API Tools
+github_repo [operation: list_repos|create_repo|list_prs|create_pr]
+github_dashboard [operation: full|notifications|issues|prs_review|security|workflows|mark_read]
+github_respond [operation: comment_issue|comment_pr|review_pr]
+github_repair [operation: close_issue|merge_pr|rerun_workflow|dismiss_alert]
+github_files [operation: list|download|download_repo|pull_repo]
+
+## Admin Tools (HIGH/CRITICAL risk)
+github_admin_repo [operation: get_settings|update_settings|archive|delete]
+github_branch_protection [operation: get|update|delete]
+github_webhooks [operation: list|create|update|delete|test]
+github_collaborators [operation: list|check|add|update_permission|remove]
+
+Use 'operation' parameter to select sub-operation within each tool.`,
 		}
 	case "notifications/initialized":
 		// Notification — no response needed (handled in main.go)

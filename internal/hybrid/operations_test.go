@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-github/v81/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/scopweb/mcp-go-github/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -473,7 +473,7 @@ func TestPushFiles(t *testing.T) {
 				return "updated", nil
 			},
 			addFunc: func(path string) (string, error) {
-				assert.Equal(t, "-A", path)
+				assert.Equal(t, "new/new.txt existing.txt", path)
 				return "added", nil
 			},
 			commitFunc: func(message string) (string, error) {

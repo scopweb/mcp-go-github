@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"strings"
 
-	ghclient "github.com/google/go-github/v81/github"
+	ghclient "github.com/google/go-github/v88/github"
 	"golang.org/x/oauth2"
 
 	"github.com/scopweb/mcp-go-github/internal/server"
@@ -53,7 +53,7 @@ func main() {
 
 	// Inicializar cliente GitHub con OAuth2
 	token := os.Getenv("GITHUB_TOKEN")
-	var githubClient ghclient.Client
+	var githubClient *ghclient.Client
 
 	if token != "" {
 		ctx := context.Background()
@@ -61,16 +61,24 @@ func main() {
 			&oauth2.Token{AccessToken: token},
 		)
 		tc := oauth2.NewClient(ctx, ts)
-		githubClient = *ghclient.NewClient(tc)
+		var err error
+		githubClient, err = ghclient.NewClient(ghclient.WithHTTPClient(tc), ghclient.WithAuthToken(token))
+		if err != nil {
+			log.Fatalf("Failed to create GitHub client: %v", err)
+		}
 	} else {
-		githubClient = *ghclient.NewClient(nil)
+		var err error
+		githubClient, err = ghclient.NewClient(ghclient.WithAuthToken(""))
+		if err != nil {
+			log.Fatalf("Failed to create GitHub client: %v", err)
+		}
 	}
 
 	// Crear wrapper del cliente GitHub
-	wrappedGithubClient := github.NewClient(&githubClient)
+	wrappedGithubClient := github.NewClient(githubClient)
 
 	// Crear cliente administrativo (v3.0)
-	adminClient := admin.NewClient(&githubClient)
+	adminClient := admin.NewClient(githubClient)
 
 	// Inicializar safety middleware (v3.0)
 	// If --profile=foo is passed, prefer ./safety.foo.json, falling back to ./safety.json

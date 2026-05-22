@@ -46,9 +46,10 @@ go test ./pkg/git/ -v           # Test specific package
 ```
 
 ## Dependencies
-- Go 1.25.0+
-- `github.com/google/go-github/v81 v81.0.0`
-- `golang.org/x/oauth2 v0.34.0`
+- Go 1.26.2
+- `github.com/google/go-github/v88 v88.0.0`
+- `golang.org/x/oauth2 v0.36.0`
+- `github.com/stretchr/testify v1.11.1`
 
 ## Available Tools (26)
 

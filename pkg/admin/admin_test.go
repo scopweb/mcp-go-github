@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/go-github/v81/github"
+	"github.com/google/go-github/v88/github"
 )
 
 // Note: These are basic unit tests that verify the admin client structure and methods.
@@ -12,7 +12,7 @@ import (
 
 func TestNewClient(t *testing.T) {
 	// Create a GitHub client
-	githubClient := github.NewClient(nil)
+	githubClient, _ := github.NewClient()
 
 	// Create admin client
 	adminClient := NewClient(githubClient)
@@ -40,7 +40,8 @@ func TestClient_Structure(t *testing.T) {
 	}
 
 	// Initialize with real client
-	client = NewClient(github.NewClient(nil))
+	githubClient2, _ := github.NewClient()
+	client = NewClient(githubClient2)
 
 	if client.client == nil {
 		t.Error("Initialized client should have non-nil GitHub client")
@@ -51,7 +52,8 @@ func TestClient_MethodSignatures(t *testing.T) {
 	// This test verifies that all admin methods have correct signatures
 	// by attempting to call them with proper types (without executing)
 
-	client := NewClient(github.NewClient(nil))
+	githubClient, _ := github.NewClient()
+	client := NewClient(githubClient)
 	ctx := context.Background()
 
 	// Test method signatures compile
@@ -256,7 +258,8 @@ func TestClient_UpdateCollaboratorPermission_CallsAdd(t *testing.T) {
 	// Verify that UpdateCollaboratorPermission correctly delegates to AddCollaborator
 	// (according to GitHub API behavior where both operations use the same endpoint)
 
-	client := NewClient(github.NewClient(nil))
+	githubClient, _ := github.NewClient()
+	client := NewClient(githubClient)
 
 	// Verify it has the same signature as AddCollaborator
 	var _ func(context.Context, string, string, string, string) (*github.CollaboratorInvitation, error) = client.UpdateCollaboratorPermission
@@ -269,7 +272,8 @@ func TestClient_ArchiveRepository_SetsArchivedFlag(t *testing.T) {
 	// Verify that ArchiveRepository correctly sets the archived flag
 	// This is a structural test - actual behavior requires API mocking
 
-	client := NewClient(github.NewClient(nil))
+	githubClient, _ := github.NewClient()
+	client := NewClient(githubClient)
 
 	// Verify signature
 	var _ func(context.Context, string, string) (*github.Repository, error) = client.ArchiveRepository
@@ -317,7 +321,8 @@ func TestClient_MethodCoverage(t *testing.T) {
 		"AddRepositoryTeam",
 	}
 
-	client := NewClient(github.NewClient(nil))
+	githubClient, _ := github.NewClient()
+	client := NewClient(githubClient)
 
 	// Verify client is not nil (basic sanity check)
 	if client == nil {
@@ -350,7 +355,8 @@ func TestClient_ContextPropagation(t *testing.T) {
 	// Verify that context is properly propagated through method calls
 	// This is important for cancellation and timeout handling
 
-	client := NewClient(github.NewClient(nil))
+	githubClient, _ := github.NewClient()
+	client := NewClient(githubClient)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Verify context parameter exists in all methods
