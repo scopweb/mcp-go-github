@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-github/v81/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/scopweb/mcp-go-github/pkg/types"
 )
 

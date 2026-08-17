@@ -261,9 +261,9 @@ For vulnerability reports, see our [Security Policy](SECURITY.md).
 
 ## System Requirements
 
-- **Go**: 1.25.0 or higher
+- **Go**: 1.26.6 or higher
 - **Git**: Optional (auto-detected; file/API tools work without it)
-- `github.com/google/go-github` v81.0.0
+- `github.com/google/go-github` v88.0.0
 - `golang.org/x/oauth2` v0.36.0
 - **GitHub Token**: Minimum `repo` permission
 

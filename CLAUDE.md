@@ -46,7 +46,7 @@ go test ./pkg/git/ -v           # Test specific package
 ```
 
 ## Dependencies
-- Go 1.26.2
+- Go 1.26.6
 - `github.com/google/go-github/v88 v88.0.0`
 - `golang.org/x/oauth2 v0.36.0`
 - `github.com/stretchr/testify v1.11.1`

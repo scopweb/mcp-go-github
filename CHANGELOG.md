@@ -16,6 +16,10 @@ y este proyecto sigue [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- **Go**: 1.26.2 → 1.26.6 (`go.mod` language version). CI already reads `go-version-file: go.mod`.
+
 ### ⚠️ Breaking Changes
 
 #### Hybrid file tools renamed with `gh_` prefix (2026-05-06)

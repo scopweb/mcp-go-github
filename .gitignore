@@ -54,6 +54,7 @@ pkg/safety/.test-backups/
 .claude/
 .agent/
 .agents/
+.mcp.json
 
 # Development scripts and tests
 check-config.ps1

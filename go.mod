@@ -1,6 +1,6 @@
 module github.com/scopweb/mcp-go-github
 
-go 1.26.2
+go 1.26.6
 
 require (
 	github.com/google/go-github/v88 v88.0.0
